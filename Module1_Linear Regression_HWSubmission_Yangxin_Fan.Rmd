@@ -1,0 +1,483 @@
+---
+title: "Module 1 Assignment on Linear Regression"
+author: "Yangxin Fan, Graduate Student"
+date: "02/16/2021"
+#output: pdf_document
+output:
+  pdf_document: default
+  df_print: paged
+  #html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy=TRUE, tidy.opts=list(width.cutoff=80))
+```
+
+***
+
+**Read and Delete This Part When Typing**
+
+- Give a name to this rmd file: `ModuleNumber_ModuleName_HWSubmission_FirstName_LastName` (for example, `Module0_Reviews_HWSubmission_Yusuf_Bilgic.rmd`). 
+- First, read the slides, review the notes, and run the lab codes. Then do the assignment, type the solution here. Knit (generate the pdf) the file. Check if it looks good.
+- You can work together, however, must have your own answer.Write your group friends you work on this assignment (see the bottom).
+- You will then submit two files to Blackboard: 
+  1) `ModuleNumber_ModuleName_HWSubmission_FirstName_LastName.pdf` and 
+  2) `ModuleNumber_ModuleName_HWSubmission_FirstName_LastName.rmd`. 
+- Grading will be based on the pdf file uploaded. Make easy and readable. Grader or me may take a look at the rmd file.
+- Unless otherwise specified, use a 5% level for statistical significance.
+- Always include your comments on results: don't just leave the numbers without explanations. Use full sentences, structured paragraphs if needed, correct grammar, and proofreading.
+- Show your knowledge with detailed work in consistency with course materials. 
+- Each part is 1 pt, so the the total is 20 pt (2 pt is baseline score). If the response is not full or not reflecting the correct answer as expected, you may still earn 0.5 or just get 0.0 pt. Your TA will grade your work. Any questions, you can write directly to your TA, lab TA `khoang2@u.rochester.edu` or R/Markdown TA `sahmad11@u.rochester.edu`.
+
+
+***
+
+\newpage{}
+
+
+## Module Assignment Questions
+
+## 1) (*Concepts*) 
+
+Perform the following commands in R after you read the docs by running `help(runif)` and `help(rnorm)`:
+
+```{r echo=TRUE, eval=FALSE}
+set.seed(99)
+n=100
+x1=runif(n) # predictor 1
+x2=rnorm(n) # predictor 2
+x3=x1+x2+rnorm(n)+5 # predictor 3
+y1=2 + 4* x2 + rnorm(n) # Model 1
+y2=2 + 3*x1 + 4* x2 + 5*x3 + rnorm(n) # Model 2
+summary(lm(y1~x2)) #Fitted Model 1
+summary(lm(y2~x1+x2+x3)) #Fitted Model 2
+```
+
+The last lines correspond to creating two linear models (call Model 1 and Model 2, respectively) and their fitted results in which y1 and y2 are functions of some of the predictors x1, x2 and x3. 
+
+a. Fit a least squares (LS) regression for Model 1. Plot the response and the predictor. Use the abline() function to display the fitted line. What are the regression coefficient estimates? Report with standard errors and p-values in a table.
+b. Is the fitted Model 1 good? Do quality of model check. Justify with appropriate metrics we covered.
+c. Now fit a LS regression for Model 2. What are the regression coefficient estimates? Report them along with the standard errors and p-values. Are the predictors significantly contributing to the model? Explain.
+d. What is the correlation between x2 and x3? Create a scatterplot displaying the relationship between the variables. Comment on the strength of the correlation.
+e. What are the assumptions in fitted Model 2? List the four assumptions. Check each. Comment on each.
+f. Do you think adding the new predictors, x1 and x3, to Model 1 improved Model 1? Test it using ANOVA F method. Comment on the results.
+g. Now suppose we corrupt one of the observations in y2: corrupt the first observation by adding 100 and then multiplying by 100 ($x1_1^*=100+100*x1_1$). Re-fit Model 2 using this new data. Address each question: What changed? What effect does this new observation have on the model? Is this observation an outlier on the fitted model? Is this observation a high-leverage point? Explain your answers showing fully knowledge and computations.
+
+
+***
+
+## 2) (*Application*) 
+
+This question involves the use of multiple linear regression on the `Auto` data set on 9 variables and 392 vehicles with a dependent (target) variable `mpg`.
+
+Variable names:
+
+- `mpg`: miles per gallon
+- `cylinders`: Number of cylinders between 4 and 8
+- `displacement`: Engine displacement (cu. inches)
+- `horsepower`: Engine horsepower
+- `weight`: Vehicle weight (lbs.)
+- `acceleration`: Time to accelerate from 0 to 60 mph (sec.)
+- `year`: Model year (modulo 100)
+- `origin`: Origin of car (1. American, 2. European, 3. Japanese)
+- `name`: Vehicle name
+
+A simple linear regression (SLR) model can be fitted with the code:
+```{r, echo=TRUE, eval=TRUE}
+library(ISLR)
+attach(Auto) #this enables to use the column names
+#summary(Auto) #always do EDA and graphs first
+#simple linear model fit. This is 'regress y=mpg onto x=horsepower'
+lm.fit = lm(mpg ~ horsepower)
+#summary(lm.fit)
+```
+
+Before doing a model fit, do exploratory data analysis (EDA) by getting numerical or graph summaries. For example, the sample mean and sd of mpg is `r round(mean(mpg, na.rm=T),2)` and `r round(sd(mpg, na.rm=T),2)`. Determine types of data: If predictors are numerical, lm() will work directly; if categorical, you need to make dummy or factor() will do it.
+
+In the SLR fitted model, the $R^2$ of the fit is `r round(summary(lm.fit)$r.sq,4)`, meaning `r round(summary(lm.fit)$r.sq,4) * 100.0`% of the variance in mpg is explained by horsepower in the linear model. 
+
+In this part, you will fit multiple linear regression (MLR) models using the lm() with mpg as the response and all the other features as the predictor. Use the summary() function to print the results. Use the plot() function to produce diagnostic plots of the least squares regression fit. Include and comment on the output.
+
+- Call the sample mean of mpg, `Model Baseline`.
+
+- Perform a SLR with mpg as the response and horsepower as the predictor. Call this model, `Model 1`.
+
+- Perform a MLR with mpg as the response and horsepower and year as the predictors. Call this model, `Model 2`.
+
+- Perform a MLR with mpg as the response and all other variables except the categorical variables as the predictors. Call this model, `Model 3`.
+
+- Perform a MLR with mpg as the response and all variables including the categorical variables as the predictors. Call this model, `Model Full`.
+
+a. Produce a scatterplot matrix which includes all of the variables in the data set.
+b. Compute the matrix of correlations between the variables using the function cor(). You will need to exclude the qualitative variables.
+c. What does the coefficient for the mpg variable suggest in Model 1? Does it change in other models?
+d. Make a table and report $SSTO$, $MSE$, $R^2$, $R^2_{adj}$, $BIC$, $F$-ts and $F$-pvalue for each model, if applicable.
+e. Comment briefly on the quality of the fit for each model. Do this in the table you created in part d.
+f. Which predictors appear `most important` in the `Model Full` fit in terms of relationship to the response? How do you justify?
+g. Predict the mpg at `c(horsepower, year)=c(200, 80)`. Report the 95% confidence interval for the prediction.
+h. Do the fit diagnostics for the Model 2 fit by doing:
+- Check some assumptions. Include necessary plots. Avoid including uncommented outputs. Comment on any problems you see with the fit.
+- Do the residual plots suggest any unusually large outliers? 
+- Does the leverage plot identify any observations with unusually high leverage?
+- Do any interactions between horsepower and year appear to be statistically significant?
+- Try a transformation of the mpg variable, such as log(X), in order to improve the $R^2_{adj}$. Comment on your findings.
+
+
+## 3) (*Theory*) 
+
+In SLR, model errors are defined as $$ {e}_{i} = y_i - {y}_i = y_i - (\beta_0 + \beta_1 x_i).$$ The ordinary LS estimation argument with cost function notation can be expressed as $$ \hat{\beta}_{LS}: argmin{J(\beta)} =  argmin{\frac{1}{n}\sum_{1}^{n}{e}_i^2}.$$
+
+a. Obtain the estimating equation for the model parameter $\beta_1$ (using differentiation). If you prefer matrix notation way to obtain the equation in a LR model, this would be great. Then, express the $\hat \beta_1$.
+
+b. In SLR,  is there any difference between $var(\hat\mu_{y_i|x_i})$ and $var(\hat{y}_{x_0})$, where $\hat\mu_{y_i|x_i}$ is estimation at $x_i$ and  $\hat{y}_{x_0}$ is prediction at a future value $x_0$? Explain.
+
+c. `Leverage statistic` of observation $x_i$ on $\hat y$ in a LS regression model is $h_i = H_{ii}$, which describes the degree by which the $i-$th measured value influences the $i$th fitted value. In the slides, we reviewed: $$X \cdot \hat{\beta}=X \cdot (X^t \cdot X)^{-1} \cdot X^t \cdot  y = H \cdot y = \hat y$$ Also, some mathematical properties are expressed as these two arguments: $1/n \leq  h_i \leq 1$, $\bar h = (p+1)/n$. Verify these two formulas numerically using the Model 2 fit in Q2, Auto  dataset. Report the calculations. Comment on the calculations whether or not these are verified.
+
+
+d. (BONUS) $R^2$ in SLR has two expressions:
+$$
+R^2 = \frac{\left[ \sum (x_i - \bar{x}) (y_i - \bar{y}) \right]^2}
+           {\sum (x_j - \bar{x})^2 \sum (y_k - \bar{y})^2}
+$$
+and $$ R^2 = \frac{\sum (y_i - \bar{y})^2 - \sum (y_i - \hat{y}_i)^2}{\sum (y_i - \bar{y})^2} = 1 - \frac{\sum (y_i - \hat{y}_i)^2}{\sum (y_i - \bar{y})^2}. $$
+Prove that these are equivalent.
+
+e. (BONUS) Ask a challenging question and answer (under the assignment context).
+
+\newpage
+
+***
+
+
+## Your Solutions
+
+Q1) 
+
+Part a:
+
+```{r echo=TRUE}
+set.seed(99)
+n=100
+x1=runif(n) # predictor 1
+x2=rnorm(n) # predictor 2
+x3=x1+x2+rnorm(n)+5 # predictor 3
+y1=2 + 4* x2 + rnorm(n) # Model 1
+y2=2 + 3*x1 + 4* x2 + 5*x3 + rnorm(n) # Model 2
+lm.fit=lm(y1~x2)
+plot(x2,y1)
+abline(lm.fit,lwd=3,col="red")
+summary(lm.fit)
+```
+See above table for standard errors and p-values of regression coefficients.
+So the intercept is 2.01543 and the coefficient for x2 is 4.02420. 
+
+***
+Part b:
+
+P values are <2e-16 for both coefficients. P value of F-statistics is also very small <2e-16. R-square and adjusted R-square are both > 0.93. These tell us model 1 is good.
+
+***
+Part c:
+
+```{r echo=TRUE}
+lm.fit2 = lm(y2~x1+x2+x3)
+summary(lm.fit2)
+```
+See above table for regression coefficient estimates and their standard errors and p-values.
+These predictors significantly contribute to model since their p-value are all very small << 0.05.
+
+***
+Part d:
+
+```{r echo=TRUE}
+cor(x2,x3)
+plot(x2,x3)
+```
+The correlation between x2 and x3 is 0.631347, indicating that x2 and x3 variables are considered moderately correlated.
+
+***
+Part e:
+
+Four assumptions in fitted model 2:
+1. Linear relationship: There exists a linear relationship between the independent variable, x, and the dependent variable, y.
+2. Independence: The residuals are indepedent. Particularly, there is no correlation between consecutive residuals in time series data.
+3. Homoscedasticity: The residuals have constant variance at every level of x.
+4. Normality: The residuals of the model are normally distributed.
+
+Assumptions checking:
+
+Assumption 1: Linear Relationship
+We create a scatter plot of x vs. y. This allows us to visually see if there is a linear relationship between the two variable.
+
+```{r echo=TRUE}
+plot(x1,y2)
+plot(x2,y2)
+plot(x3,y2)
+```
+We see that only the linear relationship between x3 and y2 is strong and the linear relationship between x2 and y2 is weaker. However, there doesn’t appear to be a linear relationship between x2 and y2. Hence, the assumption is partially met for certain variables like x3 and x2 (weaker linear relation).
+
+Assumption 2: Independence
+To test if this assumption is met, we perform a Durbin-Watson test, which is used to detect the presence of autocorrelation in the residuals of a regression.
+
+```{r echo=TRUE}
+library(car)
+durbinWatsonTest(lm.fit2)
+```
+Since P value is 0.312 > 0.05. We cannot reject the null hypothesis. So the residuals in this regression model are not autocorrelated. Hence, the assumption 2 is met.
+
+Assumption 3: Homoscedasticity
+The simplest way to detect heteroscedasticity is by creating a fitted value vs. residual plot. 
+
+```{r echo=TRUE}
+plot(predict(lm.fit2), residuals(lm.fit2))
+```
+Notice that there is no "cone" like shape for fitted value vs. residual plot. This means that residuals have constant variance at every level of x. Hence, the assumption 3 is met.
+
+Assumption 4: Normality
+
+```{r echo=TRUE}
+qqnorm(residuals(lm.fit2))
+```
+From Q-Q plot where all points roughly are on the line, we can see that residuals that roughly follow a normal distribution. The assumption 4 is met.
+
+Part f:
+
+To test will adding the new predictors, x1 and x3, to Model 1 improved Model 1 or not?
+```{r echo=TRUE}
+lm.fit3=lm(y1~x2+x1+x3)
+anova(lm.fit,lm.fit3)
+```
+P value 0.7791 >> 0.05. Hence, model 1 (with out adding x1 and x3) is better.
+
+***
+Part g:
+
+```{r echo=TRUE}
+y = y2
+y[1]=y[1]*100+100
+lm.fit4=lm(y~x1+x2+x3)
+summary(lm.fit4)
+par(mfrow=c(2,2))
+plot(lm.fit4)
+```
+P-values for the model and coefficients become larger (all >> 0.05). R square and adjusted R-square decrease significantly. Residual standard error skyrockets. This observation is an obvious outlier since in the plots involving cook distance and involving residual vs. fitted value, point 1 has the largest cook distance and largest residual both much larger the other points. However, it's not a high leverage point since it's leverage is about 0.06 just the medium.
+
+***
+
+Part h:
+
+***
+```{r echo=TRUE}
+x1[1]=x1[1]*100+100
+lm.fit5=lm(y2~x1+x2+x3)
+summary(lm.fit5)
+par(mfrow=c(2,2))
+plot(lm.fit5)
+```
+P value for the coefficient of x2 is 0.6201 >> 0.05 for x1, x3, and intercept still much less than 0.05. R-square and adjusted R square just decreaseed a little bit. Residual standard error increase by about 40%. The observation is now a high-leverage point and an outlier since from studentized residual vs leverage --> point 1 has both high leverage and high absolute studentized residual.
+Part h has different effects on model estimates from Part g's way. It has much less influece on the model's performance in general. It generated both a high leverage point and outlier rather than just an outlier in Part g.
+
+\newpage
+
+Q2) 
+
+Part a:
+
+```{r echo=TRUE}
+pairs(Auto)
+```
+
+***
+Part b:
+
+Matrix of correlation after excluding categorical variables origin and name
+```{r echo=TRUE}
+cor(Auto[,1:7])
+```
+
+***
+Part c:
+
+```{r echo=TRUE}
+library(modelr)
+model1 = lm(mpg~horsepower)
+summary(model1)
+BIC(model1)
+```
+The coefficient for the horsepower is -0.157845, which indicates that horsepower and mpg are negatively correlated. The larger the horsepower the smaller the mpg.
+
+***
+Part d:
+
+Below is that function that will return SSTO, MSE, R2, R2_adj , BIC, F-ts and F-pvalue in sequence for each model 
+
+```{r echo=TRUE}
+Model_performance <- function (model) {
+  SSE = sum(model$residuals**2)
+  r2 = summary(model)$r.squared
+  adj.r = summary(model)$adj.r.squared
+  SSTO = SSE / (1-r2)
+  MSE = SSE / 392
+  BIC = BIC(model)
+  fstat = summary(model)$fstatistic
+  fstatistic = unname(fstat[1])
+  pvalue = unname(pf(fstat[1], fstat[2], fstat[3], lower.tail=FALSE))
+  df = data.frame(first_column  = c(SSTO, MSE, r2, adj.r, BIC, fstatistic, pvalue))
+  row.names(df) = c("SSTO", "MSE", "R2", "R2_adj", "BIC", "F-ts", "F-pvalue") 
+  return(t(df))
+}
+```
+
+```{r echo=TRUE}
+Model_performance(model1)
+```
+
+```{r echo=TRUE}
+model2=lm(mpg~horsepower + year)
+Model_performance(model2)
+```
+
+```{r echo=TRUE}
+model3 = lm(mpg~cylinders+displacement+horsepower+weight+acceleration+year)
+Model_performance(model3)
+```
+
+```{r echo=TRUE}
+model4 = lm(mpg~cylinders+displacement+horsepower+weight+acceleration+year+factor(origin))
+Model_performance(model4)
+```
+
+```{r echo=TRUE}
+Complete_table = rbind(Model_performance(model1),Model_performance(model2),Model_performance(model3),Model_performance(model4))
+row.names(Complete_table) = c("Model1", "Model2", "Model3", "Model4")
+Complete_table
+```
+
+***
+Part e:
+
+All 4 models has large F-statistic which means they all beat the null (no model, just predict everything to be the mean). The full model (model 4) performs best since it has the smallest MSE (mean squared error) and BIC and the largest adjusted R square. 
+
+***
+Part f:
+
+Weight is the most important predictor since it has the largest correlation with mpg (seen from part b table).
+
+***
+Part g:
+
+```{r echo=TRUE}
+predict(model2,data.frame(horsepower=c(200),year=c(80)),interval = "prediction")
+```
+95% prediction interval is [4.745447, 22.2773]
+
+***
+Part h:
+
+```{r echo=TRUE}
+plot(predict(model2),rstudent(model2))
+plot(hatvalues(model2))
+which.max(hatvalues(model2))
+cor(horsepower,year)
+model2_new = lm(log(mpg)~horsepower+year)
+summary(model2_new)
+```
+To ask those questions:
+1. Do the residual plots suggest any unusually large outliers?
+Yes, we see in the studentized residual vs. index plot. There two points outside the range [-3,3], which could be possibly outliers.
+
+2. Does the leverage plot identify any observations with unusually high leverage?
+No, all points leverage smaller than 0.05.
+
+3. Do any interactions between horsepower and year appear to be statistically significant?
+No, the correlation between them is just -0.4163615.
+
+4. Try a transformation of the mpg variable, such as log(X), in order to improve the R2
+adjusted r2 increases to 0.7528 from previous 0.68388.
+
+
+***
+
+Part i:
+
+```{r echo=TRUE}
+predict(model2,data.frame(horsepower=c(200),year=c(80)),interval = "confidence")
+```
+95% confidence interval is [11.96143, 15.0613217], which is much narrower than the prediction interval. This is because that prediction interval is used to quantify the uncertainty surrounding mpg for a particular vehicle. But the confidence interval is used to quantify the uncertainty surrounding average mpg over a large number of vehicles. Besides, the fitted value are both 13.51137.
+
+
+***
+
+\newpage
+
+
+Q3) 
+
+Part a:
+
+$$\frac{1}{n}\sum_{1}^{n}{e}_i^2 = RSS(\beta)=(y - X\beta)^T(y - X\beta) = y^Ty + \beta^TX^TX\beta - 2\beta^TX^Ty$$
+
+This above the RSS we want to minimize, note that in our model $\beta = \begin{bmatrix}
+           \beta_0\\
+           \beta_1\\
+         \end{bmatrix}$
+We want the partial derivative of RSS w.r.t $\beta$ to be 0.
+Hence: $\frac{\partial RSS}{\partial \beta} = -2X^T(y-X\beta) = 0$
+From above: $\beta = (X^TX)^{-1}X^Ty$, we can find both $\beta_0$ and $\beta_1$ from $\beta$
+
+***
+Part b:
+
+There is a difference. The former variance is variance of average $y_i$ given value x=$x_i$ but the latter is variance of a particular value of y at $x_0$. The latter one has a larger variance. 
+
+
+***
+Part c:
+
+```{r echo=TRUE}
+library(matlib)
+model2=lm(mpg~horsepower + year)
+X=cbind(horsepower, year)
+H=X %*% inv(t(X) %*% X) %*% t(X)
+list=rep(0, 392)
+for (i in 1:392){
+  list[i]=H[i,i]
+}
+mean(list)
+mean(list)/(10/392)
+max(list)<=1
+min(list)>=1/392
+```
+These are not verified. The mean differ a lot from 10/392 (P+1)/n and min is smaller than 1/392 (1/n)
+
+***
+Part d (BONUS):
+
+![Part d (BONUS): proof of square of correlation between x and y equal to R square in simple linear regression](/Users/fanyangxin/Desktop/Statistical Methods/IMG428.jpeg)
+
+***
+Part e (BONUS):
+
+![Part e (BONUS): proof of SSTO = SSR + SSE](/Users/fanyangxin/Desktop/Statistical Methods/IMG429.jpeg)
+
+
+\newpage
+
+### Write comments, questions: ...
+
+
+***
+Yangxin Fan
+
+I hereby write and submit my solutions without violating the academic honesty and integrity. If not, I accept the consequences. 
+
+### List the fiends you worked with (name, last name): Done by myself 
+
+### Disclose the resources or persons if you get any help: ISLR book 
+
+### How long did the assignment solutions take?: 10 hours including reading ISLR while doing HW
+
+
+***
+## References
+...
