@@ -1,0 +1,447 @@
+---
+title: "Module 0 Assignment"
+author: "Yangxin Fan, Graduate Student"
+date: "02/05/2021"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+***
+
+\newpage{}
+
+## Instruction
+
+In Module 0, we briefly reviewed seven **statistical tests methods** in data analysis:
+
+  1. Conventional (z- or t-) 
+  2. Permutation (randomization-based, all permutations)
+  3. Randomization or Simulated Permutation (simulation-based, some permutations, without replacement)
+  4. Bootstrapping (resampling-based, with replacement)
+  5. Linear Regression (theory-based, LS-based)
+  6. and 7. Nonparametric Approaches: Wilcoxon and Rank-based (median test would be used as well)
+
+In the assignment, you will run these tests with a new data set for two-sample independent mean problem below.
+
+An experiment was administered whether or not extra nitrogen affects the stem weight on seedlings. One group (control, n=8) was controlled with **standard nitrogen**, the other group (treatment, n=8) was given **extra nitrogen**. After two weeks, the stem weights were measured in gr. Assume the populations of the samples are normally distributed with unknown equal variances. 
+
+The raw data is as follows:
+
+```{r echo=TRUE, results='hold'}
+control_group <- c(.40, .45, .35, .27, .46, .33, .30, .43)
+trtmnt_group <- c(.49, .45, .35, .38, .48, .55, .47, .65)
+boxplot(control_group, trtmnt_group)
+round(sd(control_group),2)
+round(sd(trtmnt_group),2)
+```
+
+```{r echo=TRUE}
+# Or, use this way, or make data frame so you can run directly the Module0 R Codes
+datam = cbind(c(control_group, trtmnt_group), c(rep(0, 8), rep(1, 8)))
+y <- datam[,1]
+group <- datam[,2]
+colnames(datam)=c("y","group")
+#View(datam) #Check the data
+```
+
+
+## Module Assignment Questions
+
+1) (*Descriptive*) Do descriptive analysis.
+
+a. Is the study design an experimental or observational study? Justify. 
+b. Obtain a side-by-side boxplot on measurements of the two groups. Include the graph. Add title and group names. 
+c. Obtain summary statistics that show central (mean, median etc) and spread (sd, IQR, range etc) measurements of the data distribution for each group. Make a table and include the statistics. 
+d. Compare the centers and spreads. Do you see a difference in centers? Do you see a difference in spreads? Comment.
+e. Do you see any potential outliers? Find and comment if exists. Explain your criterion to find outliers.
+
+
+***
+
+2) (*Test*) Using the seven methods above, test at a 5% significance level if the difference in the mean stem weight between seedlings that receive regular nitrogen and those that receive extra nitrogen is not equal. 
+
+a. Write the hypotheses.
+b. What is a hypothesis testing? Write what you know about hot to test in general.
+c. Run the seven tests and make a comparative table, showing the `p-values`. (You need to make the table showing all p-values. Modify the lab codes for this data set. Make sure you run line by line)
+d. Conclude each result with a short comment at the specified significance level (answer part c and d together, put all the p-value calculations and the comments in a table)
+e. Now, write an `overall comment` on the results that communicate with the goal of the problem. Use the context.
+
+
+***
+
+3) (*Concepts*) Analyze the validity of some tests.
+
+a. List all the assumptions on `t-test`. 
+b. Do the assumptions meet? Check each.
+c. List all the assumptions on `Wilcoxon test`. Do the assumptions meet?
+d. Do you know the assumptions on `linear regression` with LS? (a simple answer works: yes/no. if you know, write all. if not, it is fine we will learn)
+e. The three methods are based on randomization or resampling. What are the merits of doing randomization or resampling? Which of the three methods would work well for large data situation? Why?
+
+
+***
+
+4) (*Extension*) Deep analysis and pitfalls.
+
+a. List the `type of errors` (either Type I or II) committed in the decision made for each test. Make a table that shows all. Describe what Type I and Type II error rates are.
+b. Build a 95% `confidence interval` on mean difference between treatment and control groups using t-critical value, df=n1+n2-1, and t-test's standard error formula. Interpret what it says. Does it confirm the p-value result from t-test? 
+c. Obtain a percentile confidence interval (2.5th to 97.5th) on mean difference for the permutation test (using the permutation sampling distribution of differences on mean). Include the confidence interval. Interpret.
+d. Compare the confidence intervals calculated in part b and c. Which one is more precise? Which method is more efficient? Comment.
+e. Corrupt the data value .40 as 40 in the control group - as if you make a typo so this is a `bad outlier`. Recalculate the p-values of all tests. What changed? Which tests didn't change dramatically?
+f. (BONUS) `Standard error` is basically defined as the standard deviation of the sampling distribution of differences in mean. Either use the R packs or use the std of test statistics simulated for data. Can you find the standard error on mean difference estimate for each test? Do your best to find each. Which one(s) are most efficient test(s)? Why?
+g. (BONUS) Ask a challenging question and answer (under the assignment context).
+
+\newpage{}
+
+***
+
+
+## Your Solutions
+
+Q1) 
+
+Part a
+
+The study design is an experimental study since it has a control group and a treatment group, which aims to research
+whether or not extra nitrogen affects stem weights on seedlings
+
+***
+Part b:
+
+```{r echo=TRUE}
+boxplot(y~group, data=datam, xlab = 'Group', ylab='stem weight on seedlings', main="Drop in stem weight on seedlings: Control (0) and Treatment (1) groups")
+```
+
+***
+Part c
+
+```{r echo=TRUE}
+range1 = max(y) - min(y)
+range2 = max(y[group==0]) - min(y[group==0])
+range3 = max(y[group==1]) - min(y[group==1])
+summ=matrix(c(mean(y), mean(y[group==0]), mean(y[group==1]),sd(y), sd(y[group==0]), sd(y[group==1]),median(y), median(y[group==0]), median(y[group==1]),IQR(y), IQR(y[group==0]), IQR(y[group==1]),range1,range2,range3), 3, 5)
+colnames(summ)=c("mean","sd","median","IQR","range")
+rownames(summ)=c("all","control","treatment")
+table1=round(summ,2)
+table1
+```
+
+
+***
+Part d:
+
+In terms of center, treatment group has a larger mean and median than control group. Treatment group also has a wider spread but a smaller IQR compared to control group.
+
+***
+Part e:
+
+If a number is less than Q1 – 1.5×IQR or greater than Q3 + 1.5×IQR, then it is an outlier.
+```{r echo=TRUE}
+OutVals_control = boxplot(control_group)$out
+which(control_group %in% OutVals_control)
+OutVals_trtmnt = boxplot(trtmnt_group)$out
+which(trtmnt_group %in% OutVals_trtmnt )
+```
+So there are no outliers in both control group and treatment group
+
+*** 
+
+
+
+\newpage
+
+Q2) 
+
+Part a
+
+Mean weight between seedlings that receive regular nitrogen and those that 
+receive extra nitrogen is equal.
+
+***
+Part b:
+
+Hypothesis testing in general is to test an assumption regarding a population 
+parameter and provide evidence on plausibility of the null hypothesis. The null hypothesis 
+is usually a hypothesis of equality between population parameters; e.g., a null hypothesis 
+may state that the population mean return is equal to zero. The alternative hypothesis is 
+effectively the opposite of a null hypothesis.
+
+***
+Part c
+
+```{r echo=TRUE}
+# 1. T-test
+t2w=t.test(y~group, var.equal = TRUE)
+t2p=t2w$p.value
+cat(t2p, 'is p-value of T-test')
+```
+
+```{r echo=TRUE}
+# 2. Permutation Test
+diff=mean(trtmnt_group)-mean(control_group)
+library(PASWR) # using allocation functions
+set.seed(99)
+length(y)
+alloc=SRS(y,8) # see alloc[1,]
+dim(alloc) #factorial(n)/(factorial(n-r)*factorial(r))
+alloc[1,] #see an sample result
+
+# how many all combinations
+reps=choose(16,8) #sample sizes vary
+Comb <- matrix(rep(y,12870),ncol=16, byrow=TRUE)
+pdT6<-SRS(1:16,8)
+Theta=array(0,12870)
+for(i in 1:reps){
+ Theta[i]=mean(Comb[i,pdT6[i,]])-mean(Comb[i,-pdT6[i,]])
+}
+
+# p-value calculation
+num_out= sum(Theta>=diff | Theta<=-diff) #how many are out of threshold
+pep=num_out/reps
+cat(reps,',', num_out, ': number of all combinations and number beyond threshold')
+cat(pep, 'is p-value of permutation test')
+```
+
+```{r echo=TRUE}
+# 3. Randomization Test 
+reps2 <- 10000 #B=10000
+results <- numeric(reps2)
+set.seed(99)
+for (i in 1:reps2) { 
+  temp <- sample(y) 
+  results[i] <- mean(temp[1:8])-mean(temp[9:16]) 
+      } 
+# p-value
+psp=sum(results>=diff | results<=-diff)/(reps2+1)
+cat(psp, 'is p-value of randomization test') 
+```
+
+```{r echo=TRUE}
+# 4. Bootstrapping
+reps2 <- 10000 #B=10000
+results2 <- numeric(reps2)
+set.seed(99)
+for (i in 1:reps2) { 
+temp <- sample(y, replace=TRUE) 
+results2[i] <- mean(temp[1:8])-mean(temp[9:16]) 
+    } 
+bp=sum(results2>=diff | results2<=-diff)/(reps2+1) 
+cat(bp, 'is p-value of bootstrapping') 
+```
+
+```{r echo=TRUE}
+# 5. Linear regression
+lw=summary(lm(y~group))
+le=lw$coefficients[2]
+lp=coef(lw)[2,4]
+cat(lp, 'is p-value of linear regression')
+```
+
+```{r echo=TRUE}
+# 6. Wilcoxon test
+g1=y[group==1]
+g0=y[group==0]
+fitw=wilcox.test(g0,g1, exact=FALSE)
+wp=fitw$p.value
+cat(wp, 'is p-value of wilcoxon test')
+```
+
+```{r echo=TRUE}
+# 7. rank-based test
+library(quantreg)
+library(Rfit) #rank-based
+
+fit.r=summary(rfit(y~group))
+mp=fit.r$coefficients[2,4]
+cat(mp, ' is p-value of rank-based test')
+```
+```{r echo=TRUE}
+# result table
+A=round(as.matrix(c(t2p,pep,psp,bp,lp,wp,mp)),4)
+ftr="Fail to reject the null"
+rn="Reject the null in favor of the alt"
+B=c(rn,rn,rn,rn,rn,rn,ftr)
+C=cbind(A,B)
+colnames(C)=c("P-value","Decision at 5% level")
+rownames(C)=c("t-test","perm","perm-sim","bootst","lin reg","wilcoxon", "rank-based")
+C
+```
+***
+Part d:
+
+Already answered in Part C
+
+***
+Part e:
+
+In most our tests, we reject the null hypothesis that Mean weight between seedlings that receive regular nitrogen and those that receive extra nitrogen is equal at 5% statistically significant level. This tells us that extra nitrogen very likely affects the stem weight on seedlings.
+
+
+***
+
+\newpage
+
+
+Q3) 
+
+Part a
+
+t-test assumptions include: 
+(1): Independence of the obeservations. Each subject should belong to only one group. There is
+no relationship between the observations in each group.
+(2): No siginificant outliers in the two groups
+(3): Normality. the data for each group should be approximately normally distributed. And the means of two populations being compared should follow normal distribution
+(4): Homogeneity of variances. the variance of outcome variable should be equal in each group.
+
+***
+Part b:
+
+For (1), since observation belong to either control or treatment group and each one is measurement weight 
+for a different stem weight, it satisfies assumption (1).
+
+For (2), there are no outliers proved by Part e in Q1, it satisfies assumption (2).
+
+For (3), we test it by drawing Q-Q plot.
+```{r echo=TRUE}
+# Q-Q plot for control group
+qqnorm(y[group==0])
+# Q-Q plot for treatment group
+qqnorm(y[group==1])
+```
+We can see that points in each plot roughly form a straight diagonal line, it satisfies assumption (3).
+
+For (4), we can implement Levene’s test.
+```{r echo=TRUE}
+# Q-Q plot for control group
+library(car)
+leveneTest(y,as.factor(group))
+```
+Since p value > .05, this incidicates there is no significant difference between the group variances in 
+the two groups, it satisfies assumption (4).
+
+***
+Part c
+(1). Data are paired and come from the same population.
+(2). Each pair is chosen randomly and independently.
+(3). The data are measured on at least an interval scale when, as is usual, within-pair differences are calculated to perform the test (though it does suffice that within-pair comparisons are on an ordinal scale).
+It satisfies all these assumptions.
+
+***
+Part d:
+Yes, assumptions on linear regression with LS include:
+1. The regression model is linear in the coefficients and the error term
+2. The error term has a population mean of zero
+3. All independent variables are uncorrelated with the error term
+4. Observations of the error term are uncorrelated with each other
+5. The error term has a constant variance (no heteroscedasticity)
+6. No independent variable is a perfect linear function of other explanatory variables
+
+***
+Part e:
+
+The merits of doing randomization or resampling include:
+1. We rarely think in terms of the populations from which the data came, and there is no need to assume anything about normality or homoscedasticity
+2. Null hypothesis has nothing to do with parameters, but is phrased rather vaguely, as, for example, the hypothesis that the treatment has no effect on the how participants perform
+3. We do calculate some sort of test statistic, however we do not compare that statistic to tabled distributions.
+4. we are not concerned with populations, we are not concerned with estimating (or even testing) characteristics of those populations.
+Among these three methods, randomization test works well for a large trial since it requires the less computational resoruces than permutation test and bootstrapping when dealing with large datasets.
+
+***
+
+\newpage
+
+
+Q4) 
+
+Part a
+
+Type I error is the rejection of a true null hypothesis, also known as false positive rate.
+Type II error is the non-rejection of a false null hypothesis, also known as false negative rate.
+
+```{r echo=TRUE}
+A=c(0.05,0.05,0.05,0.05,0.05,0.05,0.05)
+A=cbind(A)
+colnames(A)=c("Type I error")
+rownames(A)=c("t-test","perm","perm-sim","bootst","lin reg","wilcoxon", "rank-based")
+A
+```
+since we choose alpha = 0.05, the type I error is 0.05 for all tests.
+
+***
+Part b:
+
+Here, we use t-test to build a 95% confidence interval.
+```{r echo=TRUE}
+t2w$conf.int
+```
+The 95% CI is [-0.1932609, -0.0142391]. This confirms our result from p value. Since 0 is not included in the interval, we can tell the null hypothesis is rejected at (1-95%)=5% statistically significant level.
+
+***
+Part c
+
+```{r echo=TRUE}
+quantile(Theta,probs=seq(0,1,by=0.025))
+```
+From the above table, we find that 95% confidence interval is [-0.09375, 0.09375]. Since the obeserved statistic is 
+0.48-0.37=0.11, which is outside of the CI, we reject the null hypothesis at 5% statistically significant level.
+***
+Part d:
+
+Permutation test is more precise but the traditional t-test is more efficient since permutation method is too expensive for larger samples.
+
+***
+Part e:
+```{r echo=TRUE}
+A=c(0.3445,1,0.9999,0.9999,0.3445,0.1031,0.2465)
+B=c(t2p,pep,psp,bp,lp,wp,mp)
+C=cbind(A,B)
+colnames(C)=c("p value after corrupted value","p value beofre corrupted value")
+rownames(C)=c("t-test","perm","perm-sim","bootst","lin reg","wilcoxon", "rank-based")
+C
+```
+After corrupting the data value .40 as 40 in the control group, p value of all tests go up. P value of Wilcoxon and rank-based tests go up relatively less dramatically.
+
+***
+
+***
+Part f:
+```{r echo=TRUE}
+t2w$stderr
+sd(Theta)
+sd(results)
+sd(results2)
+lw$coefficients
+```
+Therefore, standard deviation for difference between two means for t-test is 0.04173417, for permutation test is 0.0484087, for Randomization Test is 0.04893261, for Bootstrapping is 0.04688374, for linear regression is 0.04173417. T-test and linear regression are both efficient since they have smaller standard deviation for means difference of these two groups.
+***
+
+***
+Part g (Ask a challenging question and answer (under the assignment context).
+Why don't we just t-test for testing whether the mean's difference in any cases?
+The limitations of t-test appear when the population distribution is extremely skewednot and not randomly sampled.
+
+***
+
+
+
+\newpage
+
+### Write comments, questions: ...
+
+
+***
+I hereby write and submit my solutions without violating the academic honesty and integrity. If so, I accept the consequences. 
+
+### List the fiends you worked with (name, last name): I completed my homework indepedently
+
+### Disclose the resourcrs or persons if you get any help: I completed my homework indepedently and I used Module0_Lab codes to guide my codings in this homework.
+
+
+***
+## References
+...
