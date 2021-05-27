@@ -1,0 +1,210 @@
+---
+title: "Module 9 Assignment on Unsupervised Methods: PC and Clustering"
+author: "Yangxin Fan // Graduate Student"
+date: "05/01/2021"
+#output: pdf_document
+output:
+  pdf_document: default
+  df_print: paged
+  #html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(formattable)
+library(MASS)
+knitr::opts_chunk$set(echo = TRUE, tidy=TRUE, tidy.opts=list(width.cutoff=80))
+```
+
+***
+
+## Your Solutions
+
+1): PCA
+```{r eval=TRUE}
+library(ISLR)
+#Import data
+nci.labs=NCI60$labs
+unique(nci.labs) #14 types of cancer labelled (use this to check the clusters)
+length(unique(nci.labs)) 
+nci.data=NCI60$data
+dim(nci.data) 
+
+#scaled data
+nci.data_s = scale(nci.data)
+
+#PCA
+pr.out=prcomp(nci.data_s)
+
+#assign a color to each of the cancer type 
+Cols= function(vec){
+ cols= rainbow(length(unique(vec)))
+ return (cols[as.numeric(as.factor(vec))])}
+
+#Plot percent of var explained cumulatively
+pve=pr.out$sdev^2/sum(pr.out$sdev^2)
+par(mfrow=c(1,2))
+plot(pve,  type="o", ylab="Proportion of Variance Explained", xlab="Principal Component", col="blue")
+plot(cumsum(pve), type="o", ylab="Cumulative Proportion of Variance Explained", xlab="Principal Component", col="red")
+#see first 32 PCs get 80%
+cumsum(pve)
+
+#Project NCI60 caner lines to PC1 vs. PC2 
+plot(pr.out$x[,1:2], col=Cols(nci.data_s), pch=19,xlab="Z1",ylab="Z2")
+plot(pr.out$x[,c(1,3)], col=Cols(nci.data_s), pch=19,xlab="Z1",ylab="Z3")
+```
+
+Summary: PCA is helpful in dimensionality reduction. We found first 32 principal components cover over 80% of variance. Besides, as we can see from the plot the projection into PC1 vs. PC2 and PC1 vs. PC3, observations belong to same cancer type tend to appear near each other in these low dimensional space. Note that: first three PCs explain 23.87% of variance and the first two PCs just explain 18.12% of variance.
+
+***
+2): K-Means Clustering
+```{r eval=TRUE}
+library(factoextra)
+library(NbClust)
+set.seed(99)
+
+# Elbow method
+fviz_nbclust(nci.data_s, kmeans, method = "wss") +
+    geom_vline(xintercept = 4, linetype = 2)+
+  labs(subtitle = "Elbow method")
+
+#optimal # cluster = 4
+km.out=kmeans(nci.data_s, centers = 4, nstart=20)
+km.clusters=km.out$cluster
+
+#compare the clusters to true labels to check: interpret
+table(km.clusters,nci.labs)
+
+#try # cluster = 14 for part E in this HW
+km.out=kmeans(nci.data_s, centers = 14, nstart=20)
+km.clusters=km.out$cluster
+
+#compare the clusters to true labels to check: interpret
+table(km.clusters,nci.labs)
+```
+
+Summary: For K-means clustering, I use Elbow method to determine the optimal number of clusters. It turns our that the best k is 4. Let's see how well these 4 clusters match these 14 cancer types. All 7 COLON are clustered into cluster 1. 7 out of 8 MELANOMA are clustered into cluster 2. All 6 LEUKEMIA are clustered into cluster 3. All 9 RENAL and all 5 CNS are clustered into cluster 4. However, BREAST, NSCLC, OVARIAN are not clustered well into the same cluster. Overall, same cancer type tend to be clustered together.
+
+***
+3): Hierarchical Clustering
+```{r eval=TRUE}
+#row-wise Euclidean distance on scaled data
+data.dist=dist(nci.data_s)
+
+#plot the clusters using three different linkages: complete, aver, sign
+par(cex=0.4)
+plot(hclust(data.dist), labels=nci.labs, main="Complete Linkage", xlab="", sub="",ylab="")
+plot(hclust(data.dist, method="average"), labels=nci.labs, main="Average Linkage", xlab="", sub="",ylab="")
+plot(hclust(data.dist, method="single"), labels=nci.labs,  main="Single Linkage", xlab="", sub="",ylab="")
+
+#Let's cut
+hc.out=hclust(data.dist)
+hc.out
+plot(hc.out, labels=nci.labs) #hang = -1
+abline(h=139, col="pink")
+rect.hclust(hc.out, k = 4, border = "red") 
+rect.hclust(hc.out, k = 14, border = "blue") 
+
+barplot(hc.out$height, names.arg = (nrow(nci.data_s) - 1):1 # show the number of cluster below each bars
+)
+#hc.clusters=cutree(hc.out,4)
+#table(hc.clusters,nci.labs)
+hc.clusters=cutree(hc.out,14) 
+table(hc.clusters,nci.labs)
+```
+
+Summary: To find the optimal # clusters between 1 and 14. We check the above plot, we see between #cluster 4 and 5, barplot had a relatively large drop hence 4 might be a good choicee for HC. For Hierarchical Clustering with all three different linkage choices, we see that same cancer types are always clustered together. Complete linkage based Hierarchical Clustering yield more balanced and attractive clusters than average and single linkage based clusterings. In terms of clustering performance (based on complete linkage), when #cluster = 14, 5 out of 7 COLON are clustered into cluster 11. 5 out of 9 NSCLC are clustered into cluster 4. 4 out of 6 OVARIAN are clustered into cluster 4. 6 out of 7 MELANOMA are clustered into cluster 14. Of course, for cancer types with 1 or 2 counts, they are clustered perfectly. For other cancer types with larger counts like BREAST, CNS, LEUKEMIA, and RENAL, they are spread out rather evenly among multiple clusters. Hence, clustering do not work well for them.
+
+***
+4): GMM
+```{r eval=TRUE}
+library("fpc")
+library(mclust)
+
+#fit GMM
+fitM <- Mclust(nci.data_s, G=14) #if G is not entered, the optimal # cluster = 3
+
+#plot GMM clustering results 
+library("factoextra")
+fviz_cluster(fitM, data = nci.data_s, stand = FALSE,
+             ellipse = FALSE, show.clust.cent = FALSE,
+             geom = "point",palette = rainbow(14), ggtheme = theme_classic(),)
+
+#confusion to check if clusters correctly determined
+table(fitM$classification,nci.labs)
+```
+
+Summary: In GMM, if in Mclust(nci.data_s) G is not entered, it gets optimal number of cluster, it turns out the best #cluster = 3. I plot the projection into PC1 and PC2 with 14 cluster observed by GMM, We see same cluster from DBSCAN locate near each other in this plot. 
+
+When setting G=14, from the confusion matrix, we see 4 out 5 CNS are clustered into cluster 1. All 7 COLON are clustered into cluster 9. 6 out of 8 MELANOMA are clustered into cluster 14. 6 out of 9 NSCLC aree clustered into cluster 4. 7 out 8 RENAL are clustered into cluster 2. But it does not cluster BREAST, COLON, LEUKEMIA, OVARIAN well since they are not clustered into one dominant cluster. 
+
+***
+5): Performance comparison
+
+Since four different unsupervised learning methods might have different optimal number of clusters, we have to fix the number of clusters when doing comparison for fairness. Based on this, we can calculate "accuracy" by comparing clustering assignment to their real labels. Here the accuracy means a specific cancer celline% in its largest cluster. For example: Among 7 BREAST cancer cellines, 4 in cluster 1 and 3 in cluster 3. The accuracy of our clustering is 4/7. 
+
+Some calculation detail: 
+real labels: BREAST: 7;  CNS: 5; COLON: 7; K562A-repro: 1;  K562B-repro: 1;  LEUKEMIA: 6; MCF7A-repro: 1;
+MCF7D-repro: 1;  MELANOMA: 8; NSCLC: 9; OVARIAN: 6; PROSTATE: 2; RENAL: 9; UNKNOWN: 1.
+
+Accuracy for K-Means cluster with k=14 is (2+3+6+1+1+2+1+1+7+6+3+2+7+1)/64=43/64=0.671875
+
+Accuracy for Hierarchical clustering with #cluster = 14 is (2+3+5+1+1+3+1+1+6+5+4+2+4+1)/64=39/64=0.609375
+
+Accuracy for GMM with #cluster = 14 is (2+4+7+1+1+3+1+1+6+6+2+2+7+1)/64=44/64=0.6875
+
+```{r eval=TRUE}
+tab = matrix(c(round(0.671875,4), round(0.609375,4), round(0.6875,4)),ncol=1, byrow=TRUE)
+colnames(tab) = c('Accuracy')
+rownames(tab) = c('K-Means', 'Hierarchical Clustering','GMM')
+tab = as.table(tab)
+tab
+```
+
+
+***
+6) More insights/contextual conclusions from PCA
+
+1. Since the top two PC account for less than a quarter of variance, the projection onto PC1 and PC2 provide us limited information about structure of our dataset. These top two PC account for less than a quarter of variance. 
+
+2. We need top 32 principal components to get over 80% variance explained.However, this is still much smaller dimension compared to original dataset with 6,830 features.
+
+3. Although some cancer type tend to appear near each other in the plot PC1 vs. PC2, the plot is too messay to providing a well-seperated clustering since many cancer types are distributed randomly.
+
+4. In terms of trend of the plot proportion of variance explained vs. #PC, we see that there is an elbow after the 7th PC. This means that there might be a little benefit to add more than seven PCs for our further analysis i.e: to fit a model to classify cancer types.
+
+
+***
+BONUS:
+
+```{r eval=TRUE}
+# Uniform Manifold Approximation and Projection 
+library(umap)
+library(tidyverse)
+library(ggplot2)
+
+# run UMAP algorithm
+umap = umap(nci.data_s)
+
+# look at result
+df <- data.frame(x = umap$layout[,1],
+                 y = umap$layout[,2],
+                 cancer_types = nci.labs)
+
+ggplot(df, aes(x, y, colour = cancer_types)) + geom_point()
+```
+The above plot is Uniform Manifold Approximation and Projection of the 14 cancer types. As you can see that same cancer type are close to each other. However, just like other clustering we tried beforee, breast cancer is not clusterd well. MELANOMA, COLON, CNS, LEUKEMIA these large caner type groups are clustered relatively.
+
+***
+I hereby write and submit my solutions without violating the academic honesty and integrity. If not, I accept the consequences. 
+
+### List the fiends you worked with (name, last name): Myself
+
+### Disclose the resources or persons if you get any help: ISLR book and https://cran.r-project.org/web/packages/umap/vignettes/umap.html
+
+### How long did the assignment solutions take?: > 4 houts
+
+
+***
+## References
+...

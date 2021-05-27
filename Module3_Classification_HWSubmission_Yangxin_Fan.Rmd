@@ -1,0 +1,375 @@
+---
+title: "Module 3 Assignment on Classification"
+author: "Yangxin Fan, Graduate Student"
+date: "02/28/2021"
+#output: pdf_document
+output:
+  pdf_document: default
+  df_print: paged
+  #html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy=TRUE, tidy.opts=list(width.cutoff=80))
+```
+
+***
+## Module Assignment Questions
+## Q1) (*Bayes Classifier*) 
+
+`Bayes classifier` classifies an observation $x_0$ to the class $k$ for which $p_k(x_0)$ is largest, where $\pi_k$ is prior (proportion of $k$ class in all classes over $j$):
+
+$$
+p_k(x_0) = P(y=k | X=x_0) = \frac {\pi_k \cdot f_k(x_0)} {\sum { \pi_j \cdot f_j(x_0)}}.
+$$
+
+Assume univariate (p=1) observation $x$ in class $k$ is iid from $N(\mu_k, \sigma_k^2)$, $f_k(x)$ is the density function of $x$ with parameters $\mu_k,\sigma_k$.
+
+a. Show that the Bayes classifier in 2-class problem (so $k=0,1$) assigns the observation $x_0$ to the class $k$ for which the discriminant score $\delta$ is largest when $\sigma_0=\sigma_1$ :
+
+$$
+\delta_k(x_0) = x_0 \frac {\mu_k} {\sigma^2} - \frac {\mu_k^2} {2 \sigma^2} + \log(\pi_k)
+$$ 
+
+b. (Empirical Work) Verify `part a` with a simple empirical demonstration using normal densities in R with `dnorm()` or  generated normal variables from `rnorm()` with $\mu_0 = 10, \mu_1=15, \sigma_0=\sigma_1=2, \pi_0 = 0.3, \pi_1=.7, mu2 = 15, pi2 = 0.7$. Plot the class densities or histograms in color, show the intersection between two class distributions (where the classification boundary starts), check one random value from each class by calculating the discriminant score so to confirm the class it belongs. How would you describe the misclassified values or regions? Calculate the error rate. What is the Bayes error rate?
+
+c. Under `part a`, assume $\sigma_0 \neq \sigma_1$.  Derive the Bayes classifier. Show work.
+
+d. (BONUS) For p>1, derive the the Bayes classifier. Show work.
+
+
+***
+## Q2) (*Four Models as Classifiers*) 
+
+The `Boston` data from `MASS` has 506 rows and 14 columns with the target variable `crim`, which is per capita crime rate by town. You will fit classification models (`KNN`, `logistic regression`, `LDA`, and `QDA`) in order to predict whether a given suburb has a crime rate above or below .3 per capita crime rate by town. Upper .3 may be labeled as `not really safe town` to raise a family. Use `80%-20% split validation test` approach.    
+
+
+a. Fit the `KNN`, `logistic regression`, `LDA`, and `QDA` models separately using all the predictors. Report  `error rate` for each `train` and `test` data set. Use `error rate` = `1-accuracy`. Based on the test error rates, decide which model is best/better. Why?
+
+b. Using the test data set, obtain confusion matrices and report only `recall`, `precision`, `f1` and `accuracy` metrics in a table. Comment on the findings. Based on this table, decide which model is best/better. Explain why some models do better than others. Which metric would be most important in this context? Why? Is this decision different from that of `part a`? Explain.
+
+c. Obtain the ROC curve for `logistic regression` based on train data set (plot of FPR vs TPR with classification threshold change). Plot it. Calculate the area under the curve. Explain what the curve and area tell about the model. 
+
+d. How did you find the optimal $k$ in the `KNN` classifier? Did you use `grid search` or `CV`? If not, use it and revise the results in part a and b. Did the results improve?
+
+e. What are the assumptions in each model? Do your best to describe each. Do your best to check these based on the fit. When you see assumption violation, what would you do to validate the fit?
+
+
+
+***
+## Q3) (*Concepts*) 
+
+a. What would change if you perform `$k-$fold approach` instead of `validation set` approach for the model fits in Question 2? Just discuss conceptually.
+
+b. To improve the test error rates in `part a` Q2, what strategies can be applied: list the ideas as many as possible. Try one of them and report the improved test error rate.
+
+c. Explain with less technical terms an estimation method employed in `binary logistic regression`. `MLE` and `gradient descent` are two of them. 
+
+d. (BONUS) Demonstrate with technical terms and numerically how `MLE` as estimation method employed in `binary logistic regression` works. Explain.  
+
+
+***
+Review the R lab codes. Also, some useful codes to start are here:
+
+```{r eval=FALSE}
+#Some useful codes
+library(MASS)
+summary(Boston)
+rm(Boston)
+detach(Boston)
+attach(Boston)
+str(Boston)
+dim(Boston)
+n = nrow(Boston)
+n
+hist(crim)
+summary(crim)
+crime_dummy = rep(0, length(crim))
+#Q3 is 1
+quantile(crim, .75)
+crime_dummy[crim>1] = 1
+Boston = data.frame(Boston, crime_dummy)
+View(Boston)
+#rate in crime_dummy is 0.2509881 (P)
+sum(crime_dummy)/length(crime_dummy)
+# choose randomly 80% 
+set.seed(99)
+train=sample(c(TRUE,FALSE), size=n, 
+             prob=c(.80, .20), rep=TRUE) #randomly select index whether train or not from row
+train
+test=(!train)
+test
+Boston.train = Boston[train,]
+dim(Boston.train)
+Boston.test = Boston[test,]
+dim(Boston.test)
+crime_dummy.train = crime_dummy[train]
+sum(crime_dummy.train)/length(crime_dummy.train)
+crime_dummy.test = crime_dummy[test]
+sum(crime_dummy.test)/length(crime_dummy.test)
+# (this is another option to split the data into train and test)
+n_train = ceiling(.80 * n)
+n_train
+```
+
+\newpage
+
+***
+
+
+## Your Solutions
+
+Q1) 
+
+Part a:
+
+![Part a](/Users/fanyangxin/Desktop/Statistical Methods/Part a.jpeg)
+
+
+***
+Part b:
+
+```{r eval=TRUE}
+library(bayestestR)
+x = seq(0,25,by=0.001)
+dvalues_0 = 0.3 * dnorm(x, mean = 10, sd = 2)
+dvalues_1 = 0.7 * dnorm(x, mean = 15, sd = 2)
+plot(x, dvalues_0, type = "l", col='blue',ann=FALSE, xlim=c(0, 25), ylim=c(0,0.2)) 
+par(new=TRUE)
+plot(x, dvalues_1, type = "l", col='red', ann=FALSE, xlim=c(0, 25), ylim=c(0,0.2)) 
+
+f1 <- function(x)  0.3 * dnorm(x, mean = 10, sd = 2)
+f2  <- function(x) 0.7 * dnorm(x, mean = 15, sd = 2)
+abline(v = uniroot(function(x) f1(x)-f2(x),c(10,15))$root,               
+       col = "black",           
+       lty = "dashed",        
+       lwd = 2) 
+uniroot(function(x) f1(x)-f2(x),c(10,15))$root
+x1 = seq(-1000,11.82216,by=0.0001)
+area1 = area_under_curve(x1, f2(x1), method = "trapezoid")
+x2 = seq(11.82216,1000,by=0.0001)
+area2 = area_under_curve(x2, f1(x2), method = "trapezoid")
+error_rate = area1 + area2
+error_rate
+```
+The intersection is at x = 11.82216, which is the decision boundary for classification. If x < 11.82216, x is classified to class 0. Otherwise, x is classified to class 1. 
+Let's check x = 10, discriminant score for class 0 is 11.2960272 and discriminant score of class 1 is 9.018325096. Since the discriminat score is higher for class 0, x = 10 is classified to class 0. Let's check x = 15, discriminant score for class 1 is 27.76832506 and discriminant score for class 0 is 23.7960272. Since the discriminat score is higher for class 1, x = 15 is classified to class 1. The error rate is the area under the curve min(dvalues_0, dvalues_1). The error rate is about 0.09356307, which is the approximated area under the curve min(dvalues_0, dvalues_1). Bayes error rate is the lowest possible error rate for any classifier of a random outcome (into, for example, one of two categories) and is analogous to the irreducible error. It is equal to 1 - E(maxj(Pr(Y=j|X))), where the expectation averages the probability over all values of X. 
+
+***
+Part c:
+
+![Part c: variance not equal](/Users/fanyangxin/Desktop/Statistical Methods/Part c.jpeg)
+
+***
+Part d (BONUS):
+
+![Part d (BONUS): P>1](/Users/fanyangxin/Desktop/Statistical Methods/Part d.jpeg)
+
+***
+
+
+
+\newpage
+
+Q2) 
+
+Part a:
+
+```{r eval=TRUE}
+library(MASS)
+library(caTools)
+set.seed(1)
+Boston.backup = Boston
+
+# let crim>0.3 be not safe 
+Boston$crim[Boston$crim>0.3]="not safe"
+Boston$crim[Boston$crim<=0.3]="safe"
+Boston$crim=as.factor(Boston$crim)
+
+# 80% - 20% train test split
+train_rows=sample.split(Boston$crim,SplitRatio=0.8)
+Boston.train=Boston[train_rows,]
+Boston.test=Boston[!train_rows,]
+
+# KNN
+library(class)
+train.X=subset(Boston.train, select=-c(crim))
+train.y=Boston.train$crim
+test.X=subset(Boston.test, select=-c(crim))
+knn.pred=knn(train.X,test.X,train.y,k=3)
+1-mean(knn.pred==Boston.test$crim)
+
+# Logistic regression
+glm.fits=glm(crim~., data=Boston.train, family=binomial)
+glm.probs=predict(glm.fits,test.X,type="response")
+contrasts(Boston.train$crim)
+glm.pred=rep("not safe", nrow(Boston.test))
+glm.pred[glm.probs>0.5]="safe"
+1-mean(glm.pred==Boston.test$crim)
+
+# LDA
+lda.fit=lda(crim~., data=Boston.train)
+lda.pred=predict(lda.fit,Boston.test)
+lda.class=lda.pred$class
+1-mean(lda.class==Boston.test$crim)
+
+# QDA
+qda.fit=qda(crim~., data=Boston.train)
+qda.pred=predict(qda.fit,Boston.test)
+qda.class=qda.pred$class
+1-mean(qda.class==Boston.test$crim)
+```
+Summary of accuracy on test data
+1. KNN: let K=8, error rate is 0.1188119 and k=3, error rate is 0.0990099.
+2. Logistic regression: error rate is 0.07920792,
+3. LDA: error rate is 0.08910891,
+4. QDA: error rate is 0.02970297.
+Based on error rate, QDA is the best choice of model since it has the lowest error rate in test dataset.
+
+
+***
+Part b:
+
+```{r eval=TRUE}
+knn.table = table(Boston.test$crim,knn.pred)
+glm.table = table(Boston.test$crim,glm.pred)
+lda.table = table(Boston.test$crim,lda.class)
+qda.table = table(Boston.test$crim,qda.class)
+knn.table
+
+perfcheck <- function(ct) {
+  Accuracy <- (ct[1]+ct[4])/sum(ct)
+  Recall <- ct[4]/sum((ct[2]+ct[4]))      #TP/P   or Power, Sensitivity, TPR 
+  Precision <- ct[4]/sum((ct[3]+ct[4]))   #TP/P*
+  F1 <- 2/(1/Recall+1/Precision)
+  Values <- as.vector(round(c(Accuracy, Recall, Precision, F1),4)) 
+  Metrics = c("Accuracy", "Recall", "Precision", "F1")
+  cbind(Metrics, Values)
+}
+#Note this is knn result with k=3
+perfcheck(knn.table)
+perfcheck(glm.table)
+perfcheck(lda.table)
+perfcheck(qda.table)
+```
+Important notice: all results derived based on assumption that "safe" is the positive case and "not safe" is negative.
+
+Some findings: Still, although KNN was the worst in accuracy, it has pretty good precision but it has the worst recall. QDA perform better than other models since it ranks highest in all metrics accuracy, precision, recall , and F1. I think the most important metric depends on the use cases. For example, if this is for real estate pricing, then accuracy is not the most important since we want to predict as many correct labels as possible, However, if this is for a person who wants to purchase a safe house, I think that F1 score is more important. Despite of different metrics we might consider, the QDA always perform the best so the decision is same as in part a.
+
+***
+Part c:
+
+```{r eval=TRUE}
+library(pROC)
+model_glm = glm(crim ~ ., data = Boston.train, family = "binomial")
+train_prob = predict(model_glm, newdata = Boston.train, type = "response")
+train_roc = roc(Boston.train$crim ~ train_prob, plot = TRUE, print.auc = TRUE)
+as.numeric(train_roc$auc)
+```
+ROC curve is plot of true positive rate (sensitivity, recall, power) vs. false positive rate (type I error, 1-Specificity). Since AUC = 0.9764151, very close to 1, it means that logistic regression perform well in the training dataset.
+
+***
+Part d:
+
+```{r eval=TRUE}
+library(caret)
+set.seed(1)
+ctrl = trainControl(method="repeatedcv", number = 5, repeats = 3) 
+knn_grid <- expand.grid(k=c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15))
+knnFit = train(crim ~ ., data = Boston, method = "knn", trControl = ctrl, preProcess = c("center","scale"), tuneGrid = knn_grid)
+plot(knnFit)
+knnFit
+```
+I used repeated 5 cross validation on the whole Boston dataset with grid search to find the optimal k. It turns out that k=3 has the highest accuracy. k=3 gives a better result in all metrics accuracy, precision, recall, and f1 score than previous used k=8.
+
+***
+Part e:
+
+Assumptions in each model:
+1. KNN: It's a distance based classifier. Tt implicitly assumes that the smaller the distance between two points, the more similar they are.
+2. Logistic regression: Binary logistic regression requires the dependent variable to be binary and ordinal logistic regression requires the dependent variable to be ordinal. Logistic regression requires the observations to be independent of each other.Logistic regression requires there to be little or no multicollinearity among the independent variables. Logistic regression assumes linearity of independent variables and log odds. 
+3. LDA: Each variable has a normal distribution given any class labelis and each variable has same variance. 
+4. QDA: Each variable has a normal distribution given any class labelis and each variable has different variance.
+When I see assumption violation, I would either standardize or normalize violated features in original dataset to validate the fit.
+
+***
+
+
+\newpage
+
+
+Q3) 
+
+Part a:
+
+K-fold cross validation will give a better estimated test error since it randomly divide dataset into k folds. The model is trained on k-1 folds and test on the left 1 fold. Then average the performance on k test dataset. For validation set method, it randomly divide data into two parts train and test set. It doesn't average test error rate like we did in k-fold cross validation. In summary, k-fold cross validation should be a better method to evaluate model performance.
+
+
+***
+Part b:
+
+```{r eval=TRUE}
+library(glmnet)
+set.seed(1)
+x=model.matrix(crim~.,data=Boston.backup)[,-1]
+y=Boston.backup$crim
+cv.out=cv.glmnet(x,y,alpha=1)
+plot(cv.out)
+bestlam=cv.out$lambda.min
+bestlam
+cv.out
+ridge.mod=glmnet(x,y,alpha=1,lambda=bestlam)
+coef(ridge.mod)
+
+# KNN
+library(class)
+Boston.train=Boston.train[, setdiff(names(Boston.train),c('age','tax','black'))]
+Boston.test=Boston.test[, setdiff(names(Boston.test),c('age','tax','black'))]
+train.X=Boston.train[, setdiff(names(Boston.train),c('crim'))]
+train.y=Boston.train$crim
+test.X=Boston.test[, setdiff(names(Boston.test),c('crim'))]
+knn.pred=knn(train.X,test.X,train.y,k=3)
+1-mean(knn.pred==Boston.test$crim)
+```
+Basic: since crim is orginally a continuous variable, we can use features selection method used in regression setting.
+
+Possible methods to boost performance on test error include:
+
+1. Using Lasso regression to do feature selection first, then use the newly selected features for training 
+
+2. Using forward or backward subset selection to choose the best combo of variables.
+
+3. Scale/standardize numeric variables when doing data preprocessing
+
+Here I used method 1 for illustration. I choose parameters with abosolute coefficient >0.01, so features "black", "age", and "tax" are deleted. Now, for KNN method, when k=3, the test error is now only 0.07920792 improved from previous 0.0990099 in Q2.
+
+***
+Part c:
+
+In binary logistic regression, the MLE (maximum likehood estimation) method: we define a loss function to be log likelihood loss, i.e: negative sum of yn * log(yn_hat), also called cross entropy loss. When we minimize the log likelihood loss, we push the loss to as close to 0 as possible. We eventually find a estimated function of yn_hat which is also the maximum likehood estimation of yn_hat and it can minimize the error coming from misclassification and make the error rate close to bayes error rate.
+
+***
+Part d (BONUS):
+
+***
+![Part d bonus: MLE in binary logistic regression](/Users/fanyangxin/Desktop/Statistical Methods/Q3 part d.jpeg)
+
+
+\newpage
+
+### Write comments, questions: ...
+
+
+***
+I hereby write and submit my solutions without violating the academic honesty and integrity. If not, I accept the consequences. Yangxin Fan
+
+### List the friends you worked with (name, last name): Myself
+
+### Disclose the resources or persons if you get any help: ISLR
+
+### How long did the assignment solutions take?: 6 hours
+
+
+***
+## References
+...

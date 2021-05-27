@@ -1,0 +1,486 @@
+---
+title: "Module 2 Assignment on Linear Regression - 2 - V1"
+author: "Yangxin Fan, Graduate Student"
+date: "02/21/2020"
+#output: pdf_document
+output:
+  pdf_document: default
+  df_print: paged
+  #html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy=TRUE, tidy.opts=list(width.cutoff=80))
+```
+
+***
+
+**Read and Delete This Part When Typing**
+
+- Give a name to this rmd file: `ModuleNumber_ModuleName_HWSubmission_FirstName_LastName` (for example, `Module0_Reviews_HWSubmission_Yusuf_Bilgic.rmd`). 
+- First, read the slides, review the notes, and run the lab codes. Then do the assignment, type the solution here. Knit (generate the pdf) the file. Check if it looks good.
+- **Especially this Module 2, find a pair, work together, split parts among each of you, explain each other, make sure you understand all pair solutions, combine solutions, and submit separately. It is fine if your codes and results are the same. I expect comments will be your own.**
+- You will then submit two files to Blackboard: 
+  1) `ModuleNumber_ModuleName_HWSubmission_FirstName_LastName.pdf` and 
+  2) `ModuleNumber_ModuleName_HWSubmission_FirstName_LastName.rmd`. 
+- Grading will be based on the pdf file uploaded (avoid uploading extra docs). Make it easy and readable. Grader or me may take a look at the rmd file.
+- Unless otherwise specified, use a 5% level for statistical significance.
+- Always include your comments on results: don't just leave the numbers without explanations. Use full sentences, structured paragraphs if needed, correct grammar, and proofreading.
+- Don't include irrelevant and uncommented outputs. Don't include all codes: use `echo=False, results='hide'` for most of time. You can include the codes when your solution becomes easier to follow. Also, include useful results. Try to call the outputs from $'r~xyz'$. 
+- Show your knowledge with detailed work in `consistency` with course materials though tons of other ways may exist. 
+- Each part is 1 pt, so the the total is 20 pt (4 pt is baseline score). If the response is not full or not reflecting the correct answer as expected, you may still earn 0.5 or just get 0.0 pt. Your TA will grade your work. Any questions, you can write directly to your TA and cc me. Visit my office hours on TWR. Thanks!
+
+
+***
+
+\newpage{}
+
+
+***
+## Module Assignment Questions
+
+In this assignment, you will use the `Auto` data set with $7$ variables (one response `mpg` and six numerical) and $n=392$ vehicles. For sake of simplicity, categorical variables were excluded. Before each randomization used, use `set.seed(99)` so the test results are comparable.
+
+## Q1) (*Forward and Backward Selection*) 
+
+In `Module 1 Assignment`, `Q2`, you fitted `Model 3` with `mpg` as the response and the six numerical variables as predictors. This question involves the use of `forward` and `backward` selection methods on the same data set.
+
+a. Using `OLS`, fit the model with all predictors on `mpg`. Report the predictors'  coefficient estimates, $R_{adj}$, and $MSE$. Note: The method in `lm()` is called ordinary least squares (OLS).
+
+```{r eval=FALSE, echo=TRUE, results='hide'}
+#This is setup to start
+library(ISLR)
+Model_3 = mpg ~ horsepower+year+cylinders+displacement+weight+acceleration
+Model_3.fit = lm(Model_3, data=Auto)
+summary(Model_3.fit)
+# Or, prefer this restructuring way
+# by excluding categorical variables:
+# Make sure AutoNum is a data.frame
+AutoNum = Auto[, !(colnames(Auto) %in% c("origin", "name"))]
+Model_Full = mpg ~ . #you can write models in this way to call later
+Model_Full.fit = lm(Model_Full, data=AutoNum)
+summary(Model_Full.fit)
+```
+
+
+b. Using `forward selection method` from `regsubsets()` and `method="forward"`, fit MLR models and select the `best` subset of predictors. Report the best model obtained from the default setting by including the predictors' coefficient estimates, $R_{adj}$, and $MSE$.
+
+```{r echo=TRUE, eval=FALSE}
+# helpful code from the r lab: review it
+Model_Full = mpg ~ .
+regfit.m1=regsubsets(Model_Full, data=AutoNum, nbest=1, 
+                     nvmax=6, method="forward")
+reg.summary=summary(regfit.m1)
+reg.summary
+names(reg.summary)
+reg.summary$adjr2
+coef(regfit.m2, 1:6) #coefficients of all models built
+```
+
+c. What criterion had been employed to find the best subset? What other criteria exist? Explain.
+
+d. Using `backward selection method` from `regsubsets()` and `method="backward"`, fit MLR models and select the `best` subset of predictors. Report the best model obtained from the default setting by including predictors, their coefficient estimates, $R_{adj}$, and $MSE$.
+
+e. Compare the results obtained from `OLS`, `forward` and `backward` selection methods (parts a, b and d): What changed? Which one(s) is better? Comment and justify.
+
+
+## Q2) (*Cross-Validated with k-Fold*) 
+
+What changes in model selection results and the coefficient estimates when cross-validated set approach is employed? Specifically, we will use $k$-fold cross-validation (`k-fold CV`) here.
+
+a. Using the $5$-fold CV approach, fit the OLS MLR model on `mpg` including all the predictors. Report the all predictors' coefficient estimates, $MSE_{train}$, and $MSE_{test}$. 
+
+b. Using the $5$-fold CV approach and `forward selection method`, fit MLR models on `mpg` and select the `best` subset of predictors. Report the best model obtained from the default setting by including the predictors' coefficient estimates, the averaged $MSE_{train}$, and the averaged $MSE_{test}$.
+
+c. Compare the $MSE_{test}$'s. Explain.
+
+d. Using the $5$-fold CV approach and `backward selection method`, fit MLR models on `mpg` and select the `best` subset of predictors. Report the best model obtained from the default setting by including the predictors' coefficient estimates, the averaged $MSE_{train}$, $MSE_{test}$.
+
+e. Did you come up with a different model on parts b and d? Are the predictors and their coefficient estimates same? Compare and explain.
+
+f. Which fitted model is better among parts a, b, and d? Why? Justify. 
+
+
+## Q3) (*Shrinkage Methods*) 
+
+Results for `OLS`, `lasso`, and `ridge` regression methods can be comparable. Now, you are expected to observe that ridge and lasso regression methods may reduce some coefficients to zero (so in this way, these features are eliminated) and shrink coefficients of other variables to low values. 
+
+In this exercise, you will analyze theses estimation and prediction methods (OLS, ridge, lasso) on the `mpg` in the Auto data set using $k-fold$ cross-validation test approach.
+
+a. Fit a ridge regression model on the entire data set (including all six predictors, don't use yet any validation approach), with the optimal $\lambda$ chosen by `cv.glmnet()`. Report $\hat \lambda$, the predictors' coefficient estimates, and $MSE$.
+
+b. Fit a lasso regression model on the entire data set (including all six predictors, don't use yet any validation approach), with the optimal $\lambda$ chosen by `cv.glmnet()`. Report $\hat \lambda$, the predictors' coefficient estimates, and $MSE$.
+
+c. Compare the parts a and b in Q3 to part a in Q1. What changed? Comment.
+
+d. How accurately can we predict `mpg`? Using the three methods (OLS, ridge and lasso) with all predictors, you will fit and test using $5$-fold cross-validation approach with the optimal $\lambda$ chosen by `cv.glmnet()`. For each, report the averaged train and test errors ($MSE_{train}$, $MSE_{test}$):
+
+   1) Fit an `OLS` model.
+   2) Fit a `ridge` regression model.
+   3) Fit a `lasso` regression model.
+
+e. Write an overall report on part d by addressing the inquiry, `how accurately can we predict mpg?`. Is there much difference among the test errors resulting from these three approaches? Show your comprehension. 
+
+f. (BONUS) Propose a different model (or set of models) that seem to perform well on this data set, and justify your answer.
+
+g. (BONUS) Include categorical variables to the models you built in part d, Q3. Report.
+
+h. (GOLDEN BONUS) Propose a model (or set of models) that seem to perform well on this data set, and justify your answer. Make sure that you are evaluating model performance using $5$-fold cross-validation approach. You can transform the data, scale and try any methods. When $MSE_{test}$ is the lowest (under the setting of Q3, part d) in the class, your HW assignment score will be 100% (20 pts).  
+
+i. (BONUS) You can make a hybrid design in model selection using all the methods here in a way that yields better results. Show your work, justify and obtain better results in part d, Q3.
+
+
+\newpage
+
+***
+
+
+## Your Solutions
+
+## Q1) 
+
+Part a:
+
+```{r echo=TRUE}
+library(ISLR)
+AutoNum = Auto[, !(colnames(Auto) %in% c("origin", "name"))]
+Model_Full = mpg ~ . #you can write models in this way to call later
+Model_Full.fit = lm(Model_Full, data=AutoNum)
+SSE = sum(Model_Full.fit$residuals**2)
+MSE = SSE / 392
+adj.r = summary(Model_Full.fit)$adj.r.squared
+MSE
+adj.r 
+```
+The MSE is 11.59017 and adjusted r-square is 0.8062826.
+
+***
+Part b:
+
+```{r echo=TRUE}
+library(leaps)
+Model_Full = mpg ~ .
+regfit.m1=regsubsets(Model_Full, data=AutoNum, nvmax=6, method="forward")
+reg.summary=summary(regfit.m1)
+reg.summary
+which.max(reg.summary$adjr2)
+coef(regfit.m1, 2)
+reg.summary$adjr2[2]
+MSE = reg.summary$rss[2]/392
+MSE
+```
+We see the model with 2 variables has highest adjr2. Hence, the best subset of predictors is weight and year. The coefficients of weight and year are -0.006632075 and 0.757318281. The MSE of the model is 11.65549 and adjusted r square is 0.8071941.
+
+***
+Part c:
+
+Adjusted r square was used to find the best subset. BIC, AIC, Cp, validation set, and cross validation can also be used to find the best subset.
+
+***
+Part d:
+
+```{r echo=TRUE}
+library(leaps)
+Model_Full = mpg ~ .
+regfit.m2=regsubsets(Model_Full, data=AutoNum,nvmax=6, method="backward")
+reg.summary=summary(regfit.m2)
+reg.summary
+which.max(reg.summary$adjr2)
+coef(regfit.m2, 2)
+MSE = reg.summary$rss[2]/392
+MSE
+```
+We see the model with 2 variables has highest adjr2. Hence, the best subset of predictors is weight and year. The coefficients of weight and year are -0.006632075 and 0.757318281. The MSE of the model is 11.65549 and adjusted r square is 0.8071941.
+
+***
+Part e:
+
+b and d are the same and both better than a. b and d include the same set of variables weight and year have higher adjr2 and lower BIC than a. a is very likely overfit the training dataset.
+
+***
+
+
+
+\newpage
+
+## Q2) 
+
+Part a:
+
+```{r echo=TRUE}
+k = 5
+set.seed(1)
+folds = sample(1:k,nrow(Auto),replace = TRUE)
+test.errors = rep(0,5)
+train.errors = rep(0,5)
+for(j in 1:k){
+  Model_3 = mpg ~ horsepower+year+cylinders+displacement+weight+acceleration
+  train.fit = lm(Model_3, data=Auto[folds!=j,])
+  pred = predict(train.fit,Auto[folds==j,])
+  test.errors[j] = mean((Auto$mpg[folds==j]-pred)^2)
+  pred2 = predict(train.fit,Auto[folds!=j,])
+  train.errors[j] = mean((Auto$mpg[folds!=j]-pred2)^2)
+}
+mean(test.errors)
+mean(train.errors)
+Model_3 = mpg ~ horsepower+year+cylinders+displacement+weight+acceleration
+train.fit = lm(Model_3, data=Auto)
+coef(train.fit)
+```
+The coefficients of  cylinders, displacement, horsepower, weight, acceleration, and year are 
+-0.3298591, 7.678430e-03, -3.913556e-04, -6.794618e-03, 8.527325e-02, and 7.533672e-01.
+The MSE train (data other the kth fold) is 11.51806 and the MSE test is 12.35496.
+
+***
+Part b:
+
+```{r echo=TRUE}
+predict.regsubsets = function(object, newdata, id){
+  form=as.formula(object$call[[2]])
+  mat=model.matrix(form,newdata)
+  coefi=coef(object,id=id)
+  xvars=names(coefi)
+  mat[,xvars]%*%coefi
+}
+k = 5
+set.seed(1)
+folds = sample(1:k,nrow(Auto),replace = TRUE)
+cv.errors_train = matrix(NA,k,6,dimnames=list(NULL,paste(1:6)))
+cv.errors_test = matrix(NA,k,6,dimnames=list(NULL,paste(1:6)))
+for(j in 1:k){
+  best.fit=regsubsets(mpg ~ horsepower+year+cylinders+displacement+weight+acceleration, data=Auto[folds!=j,],nvmax=6,method="forward")
+  for(i in 1:6){
+    pred = predict.regsubsets(best.fit,Auto[folds==j,],id=i)
+    pred2 = predict.regsubsets(best.fit,Auto[folds!=j,],id=i)
+    cv.errors_test[j,i]=mean((Auto$mpg[folds==j]-pred)^2)
+    cv.errors_train[j,i]=mean((Auto$mpg[folds!=j]-pred2)^2)
+  }
+}
+mean.MSE.train = apply(cv.errors_train,2,mean)
+mean.MSE.test = apply(cv.errors_test,2,mean)
+mean.MSE.train
+mean.MSE.test
+reg.best = regsubsets(mpg ~ horsepower+year+cylinders+displacement+weight+acceleration, data=Auto,nvmax=6,method="forward")
+coef(reg.best,2)
+```
+The best prediction model (with lowest MSE test) is the model with 2 predictors weight and year. The MSE train is 11.62668 and MSE test is 12.03298. The coefficients of year and weight are 0.757318281 and -0.006632075.
+
+***
+Part c:
+
+Comparing MSE test of a and b, b's MSE test is 12.03298 lower than a's MSE test 12.35496. Despite a perform better in training data with a lower MSE train, it seems overfit the data. b is a better choice.
+
+***
+Part d:
+
+```{r echo=TRUE}
+predict.regsubsets = function(object, newdata, id){
+  form=as.formula(object$call[[2]])
+  mat=model.matrix(form,newdata)
+  coefi=coef(object,id=id)
+  xvars=names(coefi)
+  mat[,xvars]%*%coefi
+}
+k = 5
+set.seed(1)
+folds = sample(1:k,nrow(Auto),replace = TRUE)
+cv.errors_train = matrix(NA,k,6,dimnames=list(NULL,paste(1:6)))
+cv.errors_test = matrix(NA,k,6,dimnames=list(NULL,paste(1:6)))
+for(j in 1:k){
+  best.fit=regsubsets(mpg ~ horsepower+year+cylinders+displacement+weight+acceleration, data=Auto[folds!=j,],nvmax=6,method="backward")
+  for(i in 1:6){
+    pred = predict.regsubsets(best.fit,Auto[folds==j,],id=i)
+    pred2 = predict.regsubsets(best.fit,Auto[folds!=j,],id=i)
+    cv.errors_test[j,i]=mean((Auto$mpg[folds==j]-pred)^2)
+    cv.errors_train[j,i]=mean((Auto$mpg[folds!=j]-pred2)^2)
+  }
+}
+mean.MSE.train = apply(cv.errors_train,2,mean)
+mean.MSE.test = apply(cv.errors_test,2,mean)
+mean.MSE.train
+mean.MSE.test
+reg.best = regsubsets(mpg ~ horsepower+year+cylinders+displacement+weight+acceleration, data=Auto,nvmax=6,method="backward")
+coef(reg.best,2)
+```
+The best prediction model (with lowest MSE test) is the model with 2 predictors weight and year. The MSE train is 11.62668 and MSE test is 12.03298. The coefficients of year and weight are 0.757318281 and -0.006632075.
+
+***
+Part e:
+
+The models on part of b and d are the same with same MSE test, MSE train, and coefficients of parameters.
+
+***
+Part f:
+
+models b and d are the same both better than model a since they have lower MSE test in the five-fold cross validation.
+
+***
+
+
+\newpage
+
+
+## Q3) 
+
+Part a:
+
+```{r echo=TRUE}
+library(glmnet)
+set.seed(1)
+x=model.matrix(mpg ~ horsepower+year+cylinders+displacement+weight+acceleration,data=Auto)[,-1]
+y=Auto$mpg
+cv.out=cv.glmnet(x,y,alpha=0)
+plot(cv.out)
+bestlam=cv.out$lambda.min
+bestlam
+cv.out
+ridge.mod=glmnet(x,y,alpha=0,lambda=bestlam)
+coef(ridge.mod)
+```
+The optimal lambda is 0.6487382, its corresponding MSE is 12.46. The coefficients of horsepower, year, cylinders, displacement, weight, acceleration are -0.022405596, 0.660273457, 
+-0.450035139, -0.006941634, -0.004033276, and -0.069233569.
+
+***
+Part b:
+
+```{r echo=TRUE}
+library(glmnet)
+set.seed(1)
+x=model.matrix(mpg ~ horsepower+year+cylinders+displacement+weight+acceleration,data=Auto)[,-1]
+y=Auto$mpg
+cv.out=cv.glmnet(x,y,alpha=1)
+plot(cv.out)
+bestlam=cv.out$lambda.min
+bestlam
+cv.out
+ridge.mod=glmnet(x,y,alpha=1,lambda=bestlam)
+coef(ridge.mod)
+```
+The optimal lambda is 0.03889083, its correpsonding MSE is 11.93. Two of variables horsepower and displacement's weights are zero. The coefficients of year, cylinder, weight, and acceleration are 0.739440725, -0.090905726, -0.006378665, and 0.049887207.
+
+***
+Part c:
+
+Comparing part a and b, we found that:
+1. Lasso (part b) has a lower MSE in cross validation than Ridge (part a) which means that Lasso might be a better model.
+2. Lasso help us in feature selections via setting two of our variables' coefficients to be zero while in Ridge all variables' coefficients are non zeros.
+3. Interstingly, in Lasso, the coefficient of acceleration is positive while in Ridge it's negative. 
+
+***
+Part d:
+
+```{r echo=TRUE}
+# Ridge and Lasso
+k = 5
+set.seed(1)
+x=model.matrix(mpg ~ horsepower+year+cylinders+displacement+weight+acceleration,data=Auto)[,-1]
+y=Auto$mpg
+folds = sample(1:k,nrow(x),replace = TRUE)
+Lasso.test.errors = rep(0,5)
+Lasso.train.errors = rep(0,5)
+Ridge.test.errors = rep(0,5)
+Ridge.train.errors = rep(0,5)
+for(j in 1:k){
+  lasso.fit = glmnet(as.matrix(x[folds!=j,]),y[folds!=j],alpha=1,lambda=0.03889083)
+  pred = predict(lasso.fit,x[folds==j,])
+  Lasso.test.errors[j] = mean((y[folds==j]-pred)^2)
+  pred2 = predict(lasso.fit,x[folds!=j,])
+  Lasso.train.errors[j] = mean((y[folds!=j]-pred2)^2)
+  ridge.fit = glmnet(x[folds!=j,],y[folds!=j],alpha=0,lambda=0.6487382)
+  pred = predict(ridge.fit,x[folds==j,])
+  Ridge.test.errors[j] = mean((y[folds==j]-pred)^2)
+  pred2 = predict(ridge.fit,x[folds!=j,])
+  Ridge.train.errors[j] = mean((y[folds!=j]-pred2)^2)
+}
+Lasso.test.errors
+mean(Lasso.test.errors)
+Lasso.train.errors
+mean(Lasso.train.errors)
+Ridge.test.errors
+mean(Ridge.test.errors)
+Ridge.train.errors
+mean(Ridge.train.errors)
+```
+1. OLS model: the results can be derived from Q2, we see model with two variables weight and year giving us a 5-fold CV training MSE 11.62668 and test MSE 12.03298.The model with full six variables gives us a 5-fold CV training MSE 11.51806 and test MSE 12.35496.
+
+2. Ridge regression: 5-fold CV Averaged training MSE is 12.09008 and test MSE is 12.75366
+
+3. Lasso regression: 5-fold CV Averaged training MSE is 11.57704 and test MSE is 12.20715
+
+***
+Part e:
+
+There is some difference among test erros of these three models.
+In terms of test MSE, accuracy of model is: OLS (best variables combo: weight and year) > Lasso regression > Ridge regression or Lasso regression > OLS (full six variables model) > Ridge regression.
+The model performs best is OLS with 2 variables (weight+year) with test MSE 12.03298 and followed by lasso regression with test MSE 12.20715.
+
+Note that: optimal lambdas in both lasso and ridge are chosen using cv.glmnet() given its default is 10-fold CV. However, we fit and test using 5-fold CV in part d.
+
+***
+Part f (bonus):
+
+```{r echo=TRUE}
+library(e1071)
+AutoNum = Auto[, !(colnames(Auto) %in% c("origin", "name"))]
+tc = tune.control(sampling = c("cross"), cross = 5)
+tune.out=tune(svm,mpg~.,data=AutoNum,kernel="linear", ranges=list(cost=c(0.5,0.75,1,1.25,1.5,1.75,2)),tunecontrol = tc)
+summary(tune.out)
+```
+I propose SVM (support vector machines) with linear kernel as an another decent method which has test MSE 12.80147 in five-fold cross validation.
+
+***
+Part h (Golden Bonus):
+
+```{r echo=TRUE}
+# Ridge and Lasso
+k = 5
+set.seed(1)
+x=model.matrix(mpg ~ year+weight,data=Auto)[,-1]
+y=Auto$mpg
+folds = sample(1:k,nrow(x),replace = TRUE)
+Lasso.test.errors = rep(0,5)
+Lasso.train.errors = rep(0,5)
+Ridge.test.errors = rep(0,5)
+Ridge.train.errors = rep(0,5)
+for(j in 1:k){
+  lasso.fit = glmnet(as.matrix(x[folds!=j,]),y[folds!=j],alpha=1,lambda=0.03889083)
+  pred = predict(lasso.fit,x[folds==j,])
+  Lasso.test.errors[j] = mean((y[folds==j]-pred)^2)
+  pred2 = predict(lasso.fit,x[folds!=j,])
+  Lasso.train.errors[j] = mean((y[folds!=j]-pred2)^2)
+  ridge.fit = glmnet(x[folds!=j,],y[folds!=j],alpha=0,lambda=0.6487382)
+  pred = predict(ridge.fit,x[folds==j,])
+  Ridge.test.errors[j] = mean((y[folds==j]-pred)^2)
+  pred2 = predict(ridge.fit,x[folds!=j,])
+  Ridge.train.errors[j] = mean((y[folds!=j]-pred2)^2)
+}
+Lasso.test.errors
+mean(Lasso.test.errors)
+Lasso.train.errors
+mean(Lasso.train.errors)
+Ridge.test.errors
+mean(Ridge.test.errors)
+Ridge.train.errors
+mean(Ridge.train.errors)
+```
+The best result I find is Lasso regression (regress mpg onto two variables weight and year).
+This model produces average test MSE 12.02588 in five-fold cross validation, which is better than any of previous model's performance in test MSE under same number of folds cross validation.
+
+\newpage
+
+## Write comments, questions: ...
+
+
+***
+I hereby write and submit my solutions without violating the academic honesty and integrity. If not, I accept the consequences. --Yangxin Fan
+
+### List the fiends you worked with (name, last name): I complete the homework myself.
+
+### Disclose the resources or persons if you get any help: ISLR book
+
+### How long did the assignment work take?: 6-8 hours
+
+
+***
+## References
+...

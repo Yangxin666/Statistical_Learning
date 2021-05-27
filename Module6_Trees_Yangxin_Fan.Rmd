@@ -1,0 +1,401 @@
+---
+title: "Module 6 Assignment on Trees and Boosting"
+author: "Yangxin Fan, Graduate Student"
+date: "03/27/2021"
+#output: pdf_document
+output:
+  pdf_document: default
+  df_print: paged
+  #html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy=TRUE, tidy.opts=list(width.cutoff=80))
+```
+
+***
+
+**Read and Delete This Part Before Submission**
+
+- Give a name to this rmd file as instructed in the previous assignments.
+- First review the notes and the lab codes. Do the assignment, type the solution here. Knit (generate the pdf) the file. Check if it looks good.
+- You will then submit two files to Blackboard: pdf and rmd
+- Always include your comments on results: don't just leave the numbers without explanations. Use full sentences, structured paragraphs if needed, correct grammar, and proofreading.
+- Show your knowledge with detailed work in consistency with course materials. 
+- Don't include irrelevant and uncommented outputs and codes.
+- Each part is 2 pt. Baseline is 2 pt.
+- Each BONUS is 1 pt. Try to cover comprehensively to get the full bonus pts.
+- If the response is not full or not reflecting the correct answer as expected, you may still earn 50% or just get 0. Your TA will grade your work. Any questions, you can write directly to your TA and cc me. 
+
+
+***
+
+\newpage{}
+
+
+***
+## Module Assignment
+
+You will apply tree, bagging, random forests, and boosting methods to the `Caravan` data set with 5,822 observations on 86 variables with a binary response variable. This is a classification problem.
+
+The data contains 5,822 real customer records. Each record consists of 86 variables, containing socio-demographic data (variables 1-43) and product ownership (variables 44-86). The socio-demographic data is derived from zip codes. All customers living in areas with the same zip code have the same socio-demographic attributes. Variable 86 (Purchase) is the target/response variable, indicating whether the customer purchased a caravan insurance policy. Further information on the individual variables can be obtained at http://www.liacs.nl/~putten/library/cc2000/data.html
+
+Fit the models on the training set (as the split shown at the bottom codes) and to evaluate their performance on the test set. Use the R lab codes. Feel free to use other packs (caret) and k-fold methods if you like.
+
+
+***
+## Q1) (*Modeling*) 
+
+a. Create a training set consisting from random 4,000 observations (shuffled and then split) with the seed with `set.seed(99)` and a test set consisting of the remaining observations (see the code at the bottom). Do a brief EDA on the target variable. Overall, describe the data. Do you think a samll number of predictors suffice to get the good results?
+
+b. Fit a `logistic regression` to the training set with `Purchase` as the response and all the other variables as predictors. Report the $Accuracy$ score on the train and test data sets. Discuss if any issues observed.
+
+c. Fit a `classification tree` model to the training set with `Purchase` as the response and all the other variables as predictors. Use cross-validation `cv.tree()` in order to determine the optimal level of tree complexity and prune the tree. Then, report the $Accuracy$ score on the train and test data sets. If the R command gives errors, make necessary fixes to run the model. Discuss if any issues observed.
+
+d. Use the `bagging approach` on the classification trees model to the training set with `Purchase` as the response and all the other variables as predictors. Report the $Accuracy$ score on the train and test data sets. Discuss if any issues observed.
+
+e. Use the `random forests` on the classification trees model to the training set with `Purchase` as the response and all the other variables as predictors. Find the optimal `mtry` and `ntree` with a sophisticated choice (no mandatory to make cross-validation, just try some) and report these. Report the $Accuracy$ score on the train and test data sets. Discuss if any issues observed.
+
+
+f. Perform `boosting` on the training set with `Purchase` as the response and all the other variables as predictors. Find the optimal `shrinkage` value and `ntree` with a sophisticated choice (no mandatory to make cross-validation, just try some) and report these. Report the $Accuracy$ score on the train and test data sets. Discuss if any issues observed.
+
+
+***
+## Q2) (*Discussion and Evaluation*) 
+
+a. Overall, compare the five models (parts b-f) in Question#1. Which one is the best  in terms of $Accuracy$? Also, what fraction of the people predicted to make a purchase do in fact make one for on each model (use test data, what is called this score?)? Accuracy or this score: which one do you prefer to evaluate models? 
+
+b. Determine which four features/predictors are the most important in the `random forests` and `boosting` models fitted. Include graphs and comments. Are they same features? Why? 
+
+c. Joe claimed that his model accuracy on the prediction for the same problem is 94%. Do you think this is a good model? Explain.
+
+d. (BONUS) How to deal with `imbalanced data` in modeling? Include your solution and one of model's test result to handle this issue. Did it improve?
+
+e. (BONUS) What happens to the results if you scale the features? Discuss.
+
+\newpage
+
+***
+
+## Your Solutions
+
+Q1) 
+
+Part a:
+
+```{r eval=TRUE}
+#import packs and dataset
+rm(list = ls())
+dev.off()
+library(ISLR)
+#View(Caravan)
+dim(Caravan) #5822x86 colnames(Caravan)
+str(Caravan)
+summary(Caravan)
+#check
+table(Caravan$Purchase)
+# imbalanced data issue AND sparsity
+prop.table(table(Caravan$Purchase))
+plot(Caravan$Purchase)
+# recode the target variable: you will need one of them for models, just aware
+Caravan$Purchase =ifelse(Caravan$Purchase=="Yes", 1, 0)
+#Caravan$Purchase =ifelse(Caravan$Purchase==1, "Yes", "No")
+# shuffle, split train and test
+set.seed(99)
+rows = sample(nrow(Caravan))
+train = rows[1:4000] #1:4000 
+# split
+Caravan.train = Caravan[train, ]
+# train target
+table(Caravan.train$Purchase)
+# split
+Caravan.test = Caravan[-train, ]
+# test target
+table(Caravan.test$Purchase)
+# dims
+dim(Caravan.train) #4000x86
+dim(Caravan.test)
+```
+Target variable Purchase is a binary response either Yes or No (note 1 indicates Yes). Only 348 (5.98%) out of 5822 is Yes. Hence, this is a huge data imbalance problem. There are 85 predictors. 1-43 are demographics data and 44-85 are product ownership. I do not think a small number of variables suffice to give good results since the we have a lot of training instances so the model should have enough predictos to capture the complexity of the classification.
+
+***
+Part b (LR):
+
+```{r eval=TRUE}
+glm.fits = glm(as.factor(Purchase)~.,data=Caravan.train,family=binomial)
+# train
+glm.probs = predict(glm.fits,type="response")
+glm.pred = rep(0,4000)
+glm.pred[glm.probs>.5]=1
+table(glm.pred,Caravan.train$Purchase)
+mean(glm.pred==Caravan.train$Purchase)
+# test
+glm.probs = predict(glm.fits,Caravan.test,type="response")
+glm.pred = rep(0,1822)
+glm.pred[glm.probs>.5]=1
+table(glm.pred,Caravan.test$Purchase)
+mean(glm.pred==Caravan.test$Purchase)
+```
+Train set accuracy is 94.125%. Test set accuracy is 93.414%. However, it is almost the same as just predicting all purchase to be No. This is not a good model fit. We see both the recall (6/236 or 1/112) and precision (6/11 or 1/10) are very low in both (train or test) dataset.
+
+***
+Part c (Decision trees):
+
+```{r eval=TRUE}
+library(tree)
+tree.fits = tree(as.factor(Purchase)~.,Caravan.train)
+summary(tree.fits)
+cv.tree.fits = cv.tree(tree.fits,FUN=prune.misclass)
+cv.tree.fits
+prune.fits = prune.misclass(tree.fits,best=4)
+
+# train
+tree.pred = predict(prune.fits,Caravan.train,type="class")
+table(tree.pred,Caravan.train$Purchase)
+mean(tree.pred==Caravan.train$Purchase)
+
+# test
+tree.pred = predict(prune.fits, Caravan.test,type="class")
+table(tree.pred,Caravan.test$Purchase)
+mean(tree.pred==Caravan.test$Purchase)
+```
+Optimal level of tree (number of terminal nodes) is 4 or 1. Both give same accuracy 94.1% in train and 93.85291% in test. The issue for decision trees is that it predict all targe variable purchase to be No so it cannot deal with the data imbalance problem within the dataset.
+
+***
+Part d (Bagging):
+
+```{r eval=TRUE}
+library(randomForest)
+bag.fits = randomForest(as.factor(Purchase)~.,data=Caravan.train,mtry=85,importance=TRUE)
+
+# train
+bag.pred = predict(bag.fits,Caravan.train)
+table(bag.pred,Caravan.train$Purchase)
+mean(bag.pred==Caravan.train$Purchase)
+
+# test
+bag.pred = predict(bag.fits,Caravan.test)
+table(bag.pred,Caravan.test$Purchase)
+mean(bag.pred==Caravan.test$Purchase)
+```
+The bagging seem suffer from overfitting problem. Train accuracy is 99.25% but test accuracy is 92.53568%.
+
+
+***
+Part e:
+
+```{r eval=TRUE}
+library(randomForest)
+library(mlbench)
+library(caret)
+
+#Custom RF
+customRF <- list(type = "Classification",
+                 library = "randomForest",
+                 loop = NULL)
+
+customRF$parameters <- data.frame(parameter = c("mtry", "ntree"),
+                                  class = rep("numeric", 2),
+                                  label = c("mtry", "ntree"))
+
+customRF$grid <- function(x, y, len = NULL, search = "grid") {}
+
+customRF$fit <- function(x, y, wts, param, lev, last, weights, classProbs) {
+  randomForest(x, y,
+               mtry = param$mtry,
+               ntree=param$ntree)
+}
+
+customRF$predict <- function(modelFit, newdata, preProc = NULL, submodels = NULL)
+   predict(modelFit, newdata)
+
+customRF$prob <- function(modelFit, newdata, preProc = NULL, submodels = NULL)
+   predict(modelFit, newdata, type = "prob")
+
+customRF$sort <- function(x) x[order(x[,1]),]
+customRF$levels <- function(x) x$classes
+
+# train model
+control <- trainControl(method="repeatedcv", number=5, repeats=1,allowParallel = TRUE)
+tunegrid = expand.grid(.mtry=c(1,2,3,4,5,6,7,8,9,10),.ntree=c(25,50,75,100))
+rf_gridsearch = train(as.factor(Purchase)~., data=Caravan.train, method=customRF, metric = "Accuracy", tuneGrid=tunegrid)
+print(rf_gridsearch)
+plot(rf_gridsearch)
+```
+
+```{r eval=TRUE}
+library(randomForest)
+library(mlbench)
+library(caret)
+rf.fits = randomForest(as.factor(Purchase)~.,data=Caravan.train,mtry=1,importance=TRUE,ntrees=25)
+
+varImpPlot(rf.fits,n.var=8)
+
+# train
+rf.pred = predict(rf.fits,Caravan.train)
+table(rf.pred,Caravan.train$Purchase)
+mean(rf.pred==Caravan.train$Purchase)
+
+# test
+rf.pred = predict(rf.fits,Caravan.test)
+table(rf.pred,Caravan.test$Purchase)
+mean(rf.pred==Caravan.test$Purchase)
+```
+After hyper-parameter tuning of mtry and ntree using grid search and 5 fold CV, I found that mtry=1 and ntrees=25 give the best result. It gives accuracy 94.1% in train and 93.85291% in test since it predicts every instance to be a "No" (0). 
+
+***
+Part f:
+
+```{r eval=TRUE}
+library(gbm)
+library(mlbench)
+library(caret)
+
+gbmGrid <-  expand.grid(interaction.depth = 2, 
+                        n.trees = (1:40)*50, 
+                        shrinkage = c(0.05,0.01,0.005,0.001,0.0005),
+                        n.minobsinnode = 20)
+
+fitControl <- trainControl(method = "repeatedcv",
+                           number = 5,
+                           repeats = 1)
+
+gbmFit <- train(as.factor(Purchase)~.,data=Caravan.train, 
+                 method = "gbm", 
+                 trControl = fitControl,
+                 verbose = FALSE, 
+                 tuneGrid = gbmGrid)
+
+gbmFit
+
+vImpGbm=varImp(gbmFit)
+vImpGbm
+
+# train
+pred = predict(gbmFit, Caravan.train)
+cm = confusionMatrix(as.factor(pred),as.factor(Caravan.train$Purchase))
+print(cm)
+
+# test
+pred = predict(gbmFit, Caravan.test)
+cm = confusionMatrix(as.factor(pred),as.factor(Caravan.test$Purchase))
+print(cm)
+```
+After hyper-parameter tuning of shrinkage and ntree using grid search and 5 fold CV, I found that shrinkage=0.001 and ntrees=50 give the best result. It gives accuracy 94.1% in train and 93.85291% in test since it predicts every instance to be a "No" (0). 
+
+***
+
+
+\newpage
+
+## Q2) 
+
+Part a:
+
+In terms of accuracy, decison tree, random forest, boosting has the same highest accuracy 93.85291% in test data. Bagging / logistic regression has test accuracy 92.53568% / 93.414%. Note that: no models seem perform better than just predicting all instances to be "No" (0). The faction of the people predicted to make a purchase do in fact make one is called precision of the model. For logistic regression, precision is 0.1. For bagging, precision is 0.1842. For the other three models decision tree, random forests, and boosting, since all instances are predicted to be negative. Precision is not defined, i.e: NA since 0 is in denominator.
+
+***
+Part b:
+
+```{r eval=TRUE}
+varImpPlot(rf.fits,n.var=8)
+
+vImpGbm=varImp(gbmFit)
+vImpGbm
+```
+The top four most important features for random forest: 1. by MeanDecreaseAccuracy: PPLEZIER, APLEZIER, MOPLMIDD, and MGODOV. 2. by MeanDecreaseGini: PPERSAUT, APERSAUT, MOSTYPE, and PBRAND.
+The top four most important features for boosting: PPERSAUT, MOPLLAAG, MKOOPKLA, MOPLHOOG. They are quite different.
+
+
+
+***
+Part c:
+
+Joe's model is not really good since it perform just as well as predicting "No" for every instance. About 94% in test dataset are "No".
+
+
+***
+Part d - BONUS:
+
+We can oversample the "Yes" in the training set which might help us a build a more robust classifier.
+
+***
+Part e - BONUS:
+
+***
+\newpage
+
+
+
+### Write comments, questions: ...
+
+
+***
+I hereby write and submit my solutions without violating the academic honesty and integrity. If not, I accept the consequences. 
+
+### List the fiends you worked with (name, last name): ...
+
+### Disclose the resources or persons if you get any help: https://topepo.github.io/caret/model-training-and-tuning.html
+
+### How long did the assignment solutions take?: ...
+
+
+***
+## References
+...
+
+\newpage{}
+
+## Split and useful code
+
+Delete this chunk before submission:
+
+```{r eval=FALSE}
+#import packs and dataset
+rm(list = ls())
+dev.off()
+library(ISLR)
+#View(Caravan)
+dim(Caravan) #5822x86
+colnames(Caravan)
+str(Caravan)
+summary(Caravan)
+#check
+Caravan$Purchase
+table(Caravan$Purchase)
+#imbalanced data issue AND sparsity
+prop.table(table(Caravan$Purchase))
+plot(Caravan$Purchase)
+#recode the target variable: you will need one of them for models, just aware
+Caravan$Purchase = ifelse(Caravan$Purchase == "Yes", 1, 0)
+Caravan$Purchase = ifelse(Caravan$Purchase == 1, "Yes", "No")
+#shuffle, split train and test
+set.seed(99)
+rows <- sample(nrow(Caravan))
+train = rows[1:4000] #1:4000
+#split
+Caravan.train = Caravan[train, ]
+#train target
+table(Caravan.train$Purchase)
+#split
+Caravan.test = Caravan[-train, ]
+#test target
+table(Caravan.test$Purchase)
+#dims
+dim(Caravan.train) #4000x86
+dim(Caravan.test) #1822x86
+#if needed, apply scale (min-max would be preferred) except for the target and categoricals
+#just to show: ?scale
+#then bring back the target variable located at 86th column
+Caravan_sc1=scale(Caravan[,-86])
+summary(Caravan_sc1)
+#min-max scaling on numerical and dummies
+normalize <- function(x){
+    return((x - min(x)) /(max(x)-min(x)))
+}
+Caravan_sc2=as.data.frame(apply(Caravan[,1:85],2, FUN=normalize))
+summary(Caravan_sc2)
+#if want to replace the original featues with scaled ones
+Caravan[,1:85] = Caravan_sc2
+summary(Caravan)
+```

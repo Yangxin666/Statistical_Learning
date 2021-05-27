@@ -1,0 +1,250 @@
+---
+title: "Module 5 Assignment on Resampling"
+author: "Yangxin Fan - Graduate Student"
+date: "03/17/2021"
+#output: pdf_document
+output:
+  pdf_document: default
+  df_print: paged
+  #html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy=TRUE, tidy.opts=list(width.cutoff=80))
+```
+
+***
+
+**Read and Delete This Part When Typing**
+
+- Give a name to this rmd file as instructed in the previous assignments
+- First review the notes and the lab codes. Do the assignment, type the solution here. Knit (generate the pdf) the file. Check if it looks good.
+- You will then submit two files to Blackboard: pdf and rmd
+- Always include your comments on results: don't just leave the numbers without explanations. Use full sentences, structured paragraphs if needed, correct grammar, and proofreading.
+- Show your knowledge with detailed work in consistency with course materials. 
+- Don't include irrelevant and uncommented outputs.
+- You will have only three questions since you deserved a break from midterm test and lengthy assignments so far: Each question is 6 pt (if question has parts, each is 2 pt). Baseline is 2 pt.
+- If the response is not full or not reflecting the correct answer as expected, you may still earn 50% or just get 0. Your TA will grade your work. Any questions, you can write directly to your TA and cc me. 
+- Each BONUS is 1 pt, the total BONUS is not more than 2.
+- One of the office hours are adjusted to meet oversea students: Tue from 10am to 11am. No change in the other days: Wed and Thursday are 12:30pm to 2pm.
+- Use `set.seed(99)` before random generation every time (or, set up it in the setting). You can use R's `boot()` and `boot.ci()` or design your own boot routines. Include the code, don't include uncommented outputs.
+
+***
+
+\newpage{}
+
+
+***
+## Module Assignment Questions
+## Q1) (*Random Variable Generation*) 
+
+You have learned how to generate exponential random variables using uniform distribution. Now, you will generate normal random variables using one of the methods described in this [LINK](http://interstat.statjournals.net/YEAR/2012/articles/1205003.pdf).
+
+a. As we studied the exponential random variable in the lab session, generate a 1000 standard normal distribution using the method you chose in the link.
+
+b. Check if this generation is verified with the theory: 1) check if the characteristics (so calculate mean, sd, skewness, kurtosis for each) of empirical and theoretical distributions are similar; 2) plot a QQ and judge by eye; and 3) make a chi-squared test on empirical and theoretical buckets.
+
+c. Write an overall comment on your experience.
+
+
+***
+## Q2) (*Bootstrapping*) 
+
+Let $\hat{\sigma}^2_1$  and $\hat{\sigma}^2_2$ represent the variance estimates of two independent random samples of size 10 and 20, respectively, taken from any normal distributions with variances $\sigma^2_1=12$ and $\sigma^2_2=8$ , respectively. Let a new parameter be defined as $v= \frac{\sigma^2_1}{\sigma^2_2}$. 
+
+Based on randomly generated samples with any choice on means, use bootstrap method (B=1000) to answer each part below: 
+
+a. Estimate $\sigma^2_1$ along with the standard error on the estimate. Evaluate if this misses the true value.
+
+b. Estimate the parameter $v$ along with the standard error on the estimate. Evaluate if this misses the true value.
+
+c. Obtain the percentile-based 95% confidence interval on the $v$ estimate. 
+
+d. (BONUS) Search for what theory says about the CI on the $\sigma^2$ and $v$ estimates. Verify if the result in part c convinces the theory.
+
+e. (BONUS) Can bootstrapping method solve the probability problem, $P(\frac{\hat{\sigma}^2_1}{\hat{\sigma}^2_2}>2)$? Calculate and show. Does it give similar result from the theory?
+
+	
+***
+## Q3) (*Advanced Sampling*) 
+
+Watch [`the playlist`](https://youtube.com/playlist?list=PLTpORyMWYJsa-bLjJqzsJKXQCrMAiYu7n) on Hidden Markov, MC, MCMC, Gibbs, Metropolis-Hastings methods (or, use this link <https://youtube.com/playlist?list=PLTpORyMWYJsa-bLjJqzsJKXQCrMAiYu7n>)
+
+Write one paragraph summary for each MCMC, Gibbs and Metropolis-Hastings method by highlighting how the strategy works (watch six videos, write three paragraphs).
+
+- (BONUS) Give an example from `Deep Learning` if any of them is employed.
+
+
+\newpage
+
+***
+
+
+## Your Solutions
+
+Q1) 
+
+Part a.
+
+```{r echo=TRUE}
+set.seed(99)
+unif_rv=runif(n=1000, min=0, max=1)
+
+X1= tanh(-31.35694+28.77154*unif_rv)
+X2=tanh(-2.57136-31.16364*unif_rv)
+X3=tanh(3.94963-1.66888*unif_rv) 
+X4=tanh(2.31229+1.84289*unif_rv) 
+norm_rv_from_u=0.46615+90.72192*X1-89.36967*X2-96.55499*X3+97.36346*X4
+hist(norm_rv_from_u)
+```
+
+I used method 9: Developed using feedforward neural networks Method to generate a 1000 standard normal distribution.
+
+***
+
+Part b.
+
+```{r echo=TRUE}
+library(psych)
+norm_rv = rnorm(1000,mean=0,sd=1)
+#Mean, skewness, kurtosi
+mean(norm_rv_from_u)
+skew(norm_rv_from_u)
+kurtosi(norm_rv_from_u)
+
+#Get Q-Q plot to see the linear pattern
+qqplot(norm_rv_from_u, norm_rv)
+abline(0,1)
+
+#chi-square
+chisq.test(hist(norm_rv, nclass  = 4)$count, hist(norm_rv_from_u, nclass = 4)$count)
+hist(norm_rv, nclass=4)$count
+hist(norm_rv_from_u, nclass=4)$count
+```
+***
+
+Part c.
+
+Comments on Part a and b: I used method 9 new method proposed in paper to generate 1000 standard normal distribution. We can see this is a good sampling method since the mean is about 0.00926 very close to 0. Skewness is about 0.0445 and Kurtosis is about 0.165 very close to theoretical numbers 0 and 0. From Q-Q plot of theoretical vs empirical distribution, very few points land outside of the line. The p-value for chi-square is 0.2133 larger than 0.05. All these above results suggest that method 9 is good to generate empirical distribution for the real standard normal distribution. 
+
+***
+
+
+***
+\newpage
+
+Q2) 
+
+Part a.
+
+```{r echo=TRUE}
+library(boot)
+
+set.seed(99)
+# function to obtain R-Squared from the data
+variance = function(data,indices) {
+  d = data[indices]
+  return(var(d))
+}
+
+
+# bootstrapping with 1000 replications
+d1 = rnorm(10,mean=0,sd=sqrt(12))
+d2 = rnorm(20,mean=0,sd=sqrt(8))
+results = boot(data=d1, statistic=variance, R=1000)
+results
+```
+
+Due to the sample size is too small only 10, it misses the real values. The estimated standard error is  1.619079 and estimated variance is 4.414891.
+
+***
+
+Part b.
+
+```{r echo=TRUE}
+library(boot)
+
+set.seed(99)
+# function to obtain R-Squared from the data
+var.est.fn <- function(data, indices, n1=2000, n2=2000) {
+  sample1 = df[sample(size=n1, x=indices, replace = TRUE),1]
+  sample2 = df[sample(size=n2, x=indices, replace = TRUE),2]
+  ratio = var(sample1)/var(sample2)
+  ratio
+}
+
+# bootstrapping with 1000 replications
+x = rnorm(2000,mean=0,sd=sqrt(12))
+y = rnorm(2000,mean=0,sd=sqrt(8))
+df = cbind(x,y)
+dim(df)
+
+results = boot(df, var.est.fn, R=2000)
+
+# view results
+results
+#plot the sampling dist of statistic (ratio)
+plot(results)
+
+#statistic vs index
+plot(results$t)
+
+str(results$t)
+
+ratio = results$t[1:1000,] #or, unlist etc 
+hist(ratio)
+
+#get percentile
+quantile(ratio, probs=c(.025, .975))
+
+#bootstrapped percentile CI on the ratio statistic
+boot.ci(results, type="perc")
+
+#didn't work. why?
+boot.ci(results, type="bca")
+```
+The estimated standard error of the quantity ratio of variance is 0.4221674 and itself is 0.3719151. It is far from the real value 1.5 since both samples are way too small.
+
+
+***
+
+Part c.
+
+Seen from part b results, the 95% percentile based CI is (0.0596209, 1.6135728).
+
+
+***
+
+Part d.
+
+(1-C)*100% confidence interval means that real estimated parameter within that interval. In our case, assume we are doing a hypothesis testing with null hypothesis be the ratio of these two variance = 1.5, we cannot reject the null at 5% statistically significant level since 1.5 is within (0.0596209, 1.6135728).
+
+***
+
+Part e.
+
+Bootstrapping is not working when the two samples size 10 and 20 are way too small unless we have a larger sample size.
+
+\newpage
+
+
+Q3) 
+
+***
+
+Use of Hidden Markov Models in NLP:
+
+HMM are probability models that help programs come to the most likely decision, based on both previous decisions (like previously recognized words in a sentence) and current data (like the audio snippet). The game above is similar to the problem that a computer might try to solve when doing automatic speech recognition.
+
+The words “Alexa, please pass the” could be considered hidden states that had been determined earlier in the recognition process. The audio snippet is considered an observation that is used, in conjunction with the previously recognized words, to determine the next word (i.e., next hidden state).
+
+
+### Write comments, questions: ...
+
+
+***
+### Disclose the resources or persons if you get any help: None
+
+### How long did the assignment solutions take?: 3 hours
+
+## References: ...

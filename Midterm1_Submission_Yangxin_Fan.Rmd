@@ -1,0 +1,637 @@
+---
+title: "Midterm-1 Project Portion - Version 1"
+author: "First and last name: Yangxin Fan //
+          Pair's first and last name: Ziyu Xiong"
+date: "Submission Date: 03/09/2021"
+#output: pdf_document
+output:
+  pdf_document: default
+  df_print: paged
+  #html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy=TRUE, tidy.opts=list(width.cutoff=80))
+```
+
+## Midterm-1 Project Instruction
+
+Midterm-1 has test and project portions. This is the project portion. Based on what we covered on the modules 1, 2 and 3, you will reflect statistical methods by analyzing data and building predictive models using train and test data sets. The data sets are about college students and their academic performances and retention status, which include categorical and numerical variables. 
+
+Throughout the data analysis, we will consider only two response variables, 1) current GPA of students, a numerical response variable, call it \textbf{y1}=\textbf{Term.GPA} and 2) Persistence of student for following year, a binary response variable (0: not persistent on the next term, 1:persistent on the next term), call it \textbf{y2}=\textbf{Persistence.NextYear}.
+
+Briefly, you will fit regression models on $y1$ and classification models on $y2$ using the subset of predictors in the data set. Don't use all predictors in any model.
+
+***
+
+\section{A. Touch and Feel the Data - 5 pts}
+
+- Import Data Set and Set Up:
+
+Open the data set \textbf{StudentDataTrain.csv}. Be familiar with the data and variables. Start exploring it. Practice the code at the bottom and do the set-up.
+
+- Do Exploratory Data Analysis:
+
+Start with Exploratory Data Analysis (EDA) before running models. Visually or aggregatedly you can include the description and summary of the variables (univariate, and some bivariate analyses). If you keep this part very simple, it is ok. 
+
+***
+\section{B. Build Regression Models - 20 pts - each model 5 pts}
+
+Build linear regressions as listed below the specific four models to predict $y1$ with a small set of useful predictors. Please fit all these by justifying why you do (I expect grounding justifications and technical terms used), report the performance indicators in a comparative table, $MSE_{train}$, $MSE_{test}$, $R_{adj, train}^2$ and $R_{adj, test}^2$ using train and test data sets. The regression models you will fit:
+
+\begin{enumerate}
+\item Best OLS SLR
+\item Best OLS MLR using any best small subset of predictors (using any selection methods)
+\item Best MLR Ridge with any best small subset of predictors
+\item Best MLR Lasso with any best small subset of predictors
+\end{enumerate}
+
+For tuning parameter, justify with statistical methods/computations why you choose.
+
+***
+\section{C. Build Classification Models  - 20 pts - each model 5pts}
+
+Build  four classification models as below. Please fit all these, include performance indicators for train and test data sets, separately. Include confusion matrix for each. For each `train` and `test` data set, report: `accuracy`, `recall`, `precision`, and `f1` in a cooperative table. For LR or LDA, include ROC curve, area and interpretation. The classification models you will fit:
+
+\begin{enumerate}
+\item Logistic Regression (LR) with any best small subset of predictors
+\item KNN Classification with any best small subset of predictors
+\item Linear Discriminant Analysis (LDA) with any best small subset of predictors
+\item Quadratic Discriminant Analysis (QDA) with any best small subset of predictors
+\end{enumerate}
+
+Justify why you choose specific K in KNN with a grid search or CV methods.
+
+***
+\section{D. Overall Evaluations and Conclusion - 5 pts}
+
+Briefly, make critiques of the models fitted and write the conclusion (one sentence for each model, one sentence for each problem - regression and classificaton problems we have here). Also, just address one of these: diagnostics, violations, assumptions checks, overall quality evaluations of the models,  importance analyses (which predictors are most important or effects of them on response), outlier analyses. You don't need to address all issues. Just show the reflection of our course materials. 
+
+***
+\newpage{}
+
+\section{Project Evaluation}
+
+The submitted project report will be evaluated according to the following criteria: 
+
+\begin{enumerate}
+\item All models in the instruction used correctly 
+\item Completeness and novelty of the model fitting 
+\item Techniques and theorems of the methods used accurately 
+\item Reflection of in-class lectures and discussions
+\item Achieved reasonable/high performances; insights obtained (patterns of variables)
+\item Clear write-ups
+\end{enumerate}
+
+If the response is not full or not reflecting the correct answer as expected, you may still earn partial points. For each part or model, I formulated this `partial points` as this:
+
+- 25% of pts: little progress with some minor solutions; 
+- 50% of pts: major calculation mistake(s), but good work; 
+- 75% of pts: correct method used, but minor mistake(s). 
+
+Additionally, a student who will get the highest performances from both problems in the class (`minimum test MSE` from the regression model and `highest precision rate` from the classification model) will get a BONUS.
+
+\section{Tips and Clarifications}
+
+- You will use the test data set to asses the performance of the fitted models based on train data set. 
+
+- Implementing 5-fold cross validation method while fitting with train data set is suggested.
+
+- You can use any packs as long as you are 100% sure what it does and clear to the grader.
+
+- Include compact other useful measurements and plots. Not too many! Report some useful results in a comparative table each. 
+
+- Include helpful compact plots with titles. 
+
+- Keep at most 4 decimals to present numbers and the performance scores. 
+
+- What other models could be used to get better results? This is an extra if you like to discuss.
+
+
+***
+
+\section{Setup and Useful Codes}
+
+Data handling:
+
+```{r eval=FALSE}
+getwd() #gets what working directory is
+
+# Create a RStudio Project and work under it.
+
+#Download, Import and Assign 
+train <- read.csv("StudentDataTrain.csv")
+test <- read.csv("StudentDataTest.csv")
+
+#Summarize univariately
+summary(train) 
+summary(test) 
+
+#Dims
+dim(train) #5961x18
+dim(test) #1474x18
+
+#Without NA's
+dim(na.omit(train)) #5757x18
+dim(na.omit(test)) #1445x18
+
+#Perc of complete cases
+sum(complete.cases(train))/nrow(train)
+sum(complete.cases(test))/nrow(test)
+
+#Delete or not? Don't delete!! Use Imputation method to fill na's
+train <- na.omit(train)
+test <- na.omit(test)
+dim(train)
+
+#Missing columns as percent
+san = function(x) sum(is.na(x))
+round(apply(train,2,FUN=san)/nrow(train),4) #pers of na's in columns
+round(apply(train,1,FUN=san)/nrow(train),4) #perc of na's in rows
+
+#you can create new columns based on features
+
+#Variable/Column names
+colnames(test)
+
+#Response variables 
+#Do this for train after processing the data AND for test data sets)
+y1=train$Term.GPA #numerical
+y2=train$Persistence.NextYear #categorical
+
+##Summarize
+#y1
+hist(y1)
+boxplot(y1)
+
+#y2: 0 - not persistent (drop), 1 - persistent (stay)
+table(y2)
+
+#Persistence
+aa=table(test$Persistence.NextYear, test$Gender)
+addmargins(aa)
+prop.table(aa,2)
+barplot(aa,beside=TRUE,legend=TRUE) #counts
+barplot(t(aa),beside=TRUE,legend=TRUE)
+```
+
+
+First fits:
+
+```{r eval=FALSE}
+##A lm modeling on y1
+summary(model_lm <- lm(y1~HSGPA, data=train))$adj.r.squared #slr model
+summary(model_lm)
+
+##A Logistic Regression (with glm) modeling on y2
+model_glm <- glm(factor(y2)~HSGPA, data=train, family=binomial) 
+# model
+summary(model_glm)
+
+##checking the classification performance on Y2 with training data
+glm.predict.train = predict(model_glm, train, type="response")
+glm.predict.train[glm.predict.train>.5]="Persistent" #1
+glm.predict.train[glm.predict.train<=.5]="Dropped" #0
+
+##Confusing matrix (report the proportions)
+table(glm.predict.train, train$Persistence.NextYear)
+
+```
+
+How to create new columns and make dummy:
+```{r eval=FALSE}
+##use ifelse, create dummy
+Combined$FullTime <- ifelse((Combined$N.RCourse - Combined$N.Ws)>2, 1, 0) 
+# If registered for full time (12 to 18 hours) students will be assessed the full time undergraduate rate. FOR GRAD, IT IS 9 OR MORE.
+
+##gender dummy
+Combined$genderD <- ifelse(Combined$gender=="Male", 1, 0) 
+# If registered for full time (12 to 18 hours) students will be assessed the full time undergraduate rate. FOR GRAD, IT IS 9 OR MORE.
+
+EnrollGrades$GradeDF <- ifelse(EnrollGrades$Grade=="F" | EnrollGrades$Grade=="D", 1, 0)
+
+##only numerical from combined and combinedD
+numvC <- sapply(Combined, class) == "numeric" | sapply(Combined, class) == "integer"
+CombinedN <- Combined[, numvC]
+```
+
+***
+
+\newpage
+
+
+
+
+## Your Solutions
+
+\subsection{Section A.} 
+
+Exploratory Data Analysis (EDA)
+```{r eval=TRUE}
+train <- read.csv("StudentDataTrain.csv")
+test <- read.csv("StudentDataTest.csv")
+
+#Dims
+dim(train) 
+dim(test) 
+
+#Column names
+names(train)
+
+#Summarize univariately
+summary(train)
+summary(test)
+
+#Summarize bivariately
+cor(train[, c('Term.GPA','Persistence.NextYear','N.RegisteredCourse','N.Ws')])
+
+#MICE imputations to fill in all the missing values (NAs):
+library(mice)
+train = mice(train,m=5,maxit=50,meth='pmm',seed=500)
+train = complete(train,1)
+summary(train)
+test = mice(test,m=5,maxit=50,meth='pmm',seed=500)
+test = complete(test,1)
+summary(train)
+
+#dummies for categorical variables
+library(dummies)
+total = rbind(train, test)
+train = dummy.data.frame(train, sep = ".")
+test = dummy.data.frame(test, sep = ".")
+```
+Summary:
+
+1. Training dataset consists of 5961 observations and 18 features and test dataset consists of 1474 observations and 18 features.
+
+2. Among 18 features, Race_Ethc_Visa, Gender, and Entry_Term are categorical. Persistence and FullTimeStudent are binary. All others are numerical. For Race_Ethc_Visa and Gender seperately, the number of each category is pretty much even. For HSGPA, SAT_Total, and Term.GPA, the mean and median are very close, which means the distribution is not so skewed.
+
+3. In training dataset, there are missing values in features Gender(2), HSGPA(17), SAT_Total(12), and Perc.Pass(186). In test dataset, there are missing values in features Gender(1) and Perc.Pass (28).
+
+4. In terms of bivariate analysis, we could use correlation matrix to analyze correlations between any pair of numeric attributes. Here for convenience I only analyze correlations among Term.GPA, Persistence.NextYear, N.RegisteredCourse, and N.Ws. Among these correlation, the correlation between Term.GPA and Persistence.NextYear is the largest 0.4766.
+
+5. Using MICE imputation methods to fill in all NAs in training and test datasets.
+
+6. One-hot encoding for categorical variables.
+
+***
+
+\newpage
+\subsection{Section B.} 
+
+#Subset selections using adjusted_r2 to select the best subset
+```{r eval=TRUE}
+library(leaps)
+reg.full = regsubsets(Term.GPA~.-Persistence.NextYear, data=train, nvmax=21, method="forward")
+reg.summary = summary(reg.full)
+reg.summary
+which.max(reg.summary$adjr2)
+```
+
+- Model 1 (OLS SLR)
+
+```{r eval=TRUE}
+y1 = train$Term.GPA
+model_lm = lm(y1~HSGPA, data = train)
+adj_r2_train = summary(model_lm)$adj.r.squared
+SSE = sum(model_lm$residuals**2)
+train_MSE = SSE / 5961
+pred = predict(model_lm,test)
+test_MSE = mean((test$Term.GPA-pred)^2)
+SSE = test_MSE * 1474
+SSTO = sum((test$Term.GPA-mean(test$Term.GPA))^2)
+r2 = 1- SSE/SSTO
+adj_r2_test = 1- (1-r2)*(1474-1)/(1474-1-1)
+
+tab = matrix(c(round(train_MSE,4), round(test_MSE,4), round(adj_r2_train,4), round(adj_r2_test,4)), ncol=2, byrow=TRUE)
+colnames(tab) = c('Train', 'Test')
+rownames(tab) = c('MSE', 'Adjusted R square')
+#convert matrix to table 
+tab = as.table(tab)
+tab
+```
+The best OLS SLR is regress Term.GPA onto HSGPA. The training_MSE is 1.0279, the adjusted training R square is 0.0038, the test_MSE is 0.9856, and adjusted test R square is 0.0021.
+
+***
+
+- Model 2 (OLS MLR)
+
+
+```{r eval=TRUE}
+model_lm = lm(y1~Race_Ethc_Visa.Afram+Gender.Female+HSGPA+SAT_Total+N.As+FullTimeStudent+N.PassedCourse,data=train)
+adj_r2_train = summary(model_lm)$adj.r.squared
+SSE = sum(model_lm$residuals**2)
+train_MSE = SSE / 5961
+pred = predict(model_lm,test)
+test_MSE = mean((test$Term.GPA-pred)^2)
+SSE = test_MSE * 1474
+SSTO = sum((test$Term.GPA-mean(test$Term.GPA))^2)
+r2 = 1- SSE/SSTO
+adj_r2_test = 1- (1-r2)*(1474-1)/(1474-7-1)
+
+tab = matrix(c(round(train_MSE,4), round(test_MSE,4), round(adj_r2_train,4), round(adj_r2_test,4)), ncol=2, byrow=TRUE)
+colnames(tab) = c('Train', 'Test')
+rownames(tab) = c('MSE', 'Adjusted R square')
+#convert matrix to table 
+tab = as.table(tab)
+tab
+```
+Best subset choice is determined by the  highest adjusted_r2 in #subset selection section. The best subset selection are variables Race_Ethc_Visa.Afram, Gender.Female, HSGPA+SAT_Total, N.As+FullTimeStudent, N.PassedCourse. The training_MSE is 1.0257, the adjusted training R square is 0.0050, the test_MSE is 0.9907, and adjusted test R square is -0.0072.
+
+***
+
+- Model 3 (MLR Ridge)
+
+```{r eval=TRUE}
+library(glmnet)
+set.seed(1)
+x=model.matrix(Term.GPA~Race_Ethc_Visa.Afram+Gender.Female+HSGPA+SAT_Total+N.As+FullTimeStudent+N.PassedCourse,data=train)[,-1]
+x_test=model.matrix(Term.GPA~Race_Ethc_Visa.Afram+Gender.Female+HSGPA+SAT_Total+N.As+FullTimeStudent+N.PassedCourse,data=test)[,-1]
+y=y1
+y_test=test$Term.GPA
+cv.out=cv.glmnet(x,y,alpha=0,nfolds=5)
+plot(cv.out)
+bestlam=cv.out$lambda.min
+bestlam
+ridge.fit = glmnet(x,y,alpha=0,lambda=0.2004251)
+pred_1 = predict(ridge.fit,x)
+pred_2 = predict(ridge.fit,x_test)
+
+train_MSE = mean((train$Term.GPA-pred_1)^2)
+SSE = train_MSE * 5961
+SSTO = sum((train$Term.GPA-mean(train$Term.GPA))^2)
+r2 = 1- SSE/SSTO
+adj_r2_train = 1- (1-r2)*(5961-1)/(5961-7-1)
+test_MSE = mean((test$Term.GPA-pred_2)^2)
+SSE = test_MSE * 1474
+SSTO = sum((test$Term.GPA-mean(test$Term.GPA))^2)
+r2 = 1- SSE/SSTO
+adj_r2_test = 1- (1-r2)*(1474-1)/(1474-7-1)
+
+tab = matrix(c(round(train_MSE,4), round(test_MSE,4), round(adj_r2_train,4), round(adj_r2_test,4)), ncol=2, byrow=TRUE)
+colnames(tab) = c('Train', 'Test')
+rownames(tab) = c('MSE', 'Adjusted R square')
+#convert matrix to table 
+tab = as.table(tab)
+tab
+```
+Best lambda is 0.2004251. The training_MSE is 1.0259, the adjusted training R square is 0.0047, the test_MSE is 0.9888, and adjusted test R square is -0.0053.
+
+***
+
+- Model 4 (MLR Lasso) 
+
+```{r eval=TRUE}
+library(glmnet)
+set.seed(1)
+x=model.matrix(Term.GPA~Race_Ethc_Visa.Afram+Gender.Female+HSGPA+SAT_Total+N.As+FullTimeStudent+N.PassedCourse,data=train)[,-1]
+x_test=model.matrix(Term.GPA~Race_Ethc_Visa.Afram+Gender.Female+HSGPA+SAT_Total+N.As+FullTimeStudent+N.PassedCourse,data=test)[,-1]
+y=y1
+y_test=test$Term.GPA
+cv.out=cv.glmnet(x,y,alpha=1,nfolds=5)
+plot(cv.out)
+bestlam=cv.out$lambda.min
+bestlam
+ridge.fit = glmnet(x,y,alpha=1,lambda=0.0001381452)
+pred_1 = predict(ridge.fit,x)
+pred_2 = predict(ridge.fit,x_test)
+
+train_MSE = mean((train$Term.GPA-pred_1)^2)
+SSE = train_MSE * 5961
+SSTO = sum((train$Term.GPA-mean(train$Term.GPA))^2)
+r2 = 1- SSE/SSTO
+adj_r2_train = 1- (1-r2)*(5961-1)/(5961-7-1)
+
+test_MSE = mean((test$Term.GPA-pred_2)^2)
+SSE = test_MSE * 1474
+SSTO = sum((test$Term.GPA-mean(test$Term.GPA))^2)
+r2 = 1- SSE/SSTO
+adj_r2_test = 1- (1-r2)*(1474-1)/(1474-7-1)
+
+tab = matrix(c(round(train_MSE,4), round(test_MSE,4), round(adj_r2_train,4), round(adj_r2_test,4)), ncol=2, byrow=TRUE)
+colnames(tab) = c('Train', 'Test')
+rownames(tab) = c('MSE', 'Adjusted R square')
+#convert matrix to table 
+tab = as.table(tab)
+tab
+```
+Best lambda is 0.0001381452. The training_MSE is 1.0257, the adjusted training R square is 0.0050, the test_MSE is 0.9906, and adjusted test R square is -0.0071.
+
+***
+\newpage
+\subsection{Section C.} 
+
+- Model 1 (Logistic Regression)
+
+```{r eval=TRUE}
+library(pROC)
+glm.fits=glm(as.factor(Persistence.NextYear)~Term.GPA+Perc.PassedEnrolledCourse, data=train, family=binomial)
+
+glm.probs=predict(glm.fits,train,type="response")
+glm.pred=rep(0, nrow(train))
+glm.pred[glm.probs>0.5]=1
+ct = table(train$Persistence.NextYear,glm.pred)
+ct
+
+Accuracy_train = (ct[1]+ct[4])/sum(ct)
+Recall_train = ct[4]/sum((ct[2]+ct[4]))     
+Precision_train = ct[4]/sum((ct[3]+ct[4]))   
+F1_train = 2/(1/Recall_train+1/Precision_train)
+train_roc=roc(train$Persistence.NextYear,glm.probs,plot=TRUE, legacy.axes = TRUE, 
+print.auc = TRUE, xlab="False Positive Rate", ylab="True Positive Rate")
+AUC_train = as.numeric(train_roc$auc)
+
+glm.probs=predict(glm.fits,test,type="response")
+glm.pred=rep(0, nrow(test))
+glm.pred[glm.probs>0.5]=1
+ct = table(test$Persistence.NextYear,glm.pred)
+ct
+
+Accuracy_test = (ct[1]+ct[4])/sum(ct)
+Recall_test = ct[4]/sum((ct[2]+ct[4]))     
+Precision_test = ct[4]/sum((ct[3]+ct[4]))   
+F1_test = 2/(1/Recall_test+1/Precision_test)
+test_roc=roc(test$Persistence.NextYear,glm.probs,plot=TRUE, legacy.axes = TRUE, 
+print.auc = TRUE, xlab="False Positive Rate", ylab="True Positive Rate")
+AUC_test = as.numeric(test_roc$auc)
+
+tab = matrix(c(round(Accuracy_train,4), round(Accuracy_test,4), round(Recall_train,4), round(Recall_test,4), round(Precision_train,4),round(Precision_test,4),
+round(F1_train,4),round(F1_test,4),round(AUC_train,4),round(AUC_test,4)),ncol=2, byrow=TRUE)
+colnames(tab) = c('Train', 'Test')
+rownames(tab) = c('Accuracy', 'Recall','Precision','F1','AUC')
+tab = as.table(tab)
+tab
+```
+Results of train and test accuracy, recall, precision, F1, ROC curve, and AUC are shown above.
+
+
+***
+
+- Model 2 (KNN)
+
+```{r eval=TRUE}
+library(pROC)
+library(caret)
+library(class)
+set.seed(1)
+ctrl = trainControl(method="repeatedcv", number = 5, repeats = 3) 
+knn_grid <- expand.grid(k=c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40))
+knnFit = train(as.factor(Persistence.NextYear)~Term.GPA+Perc.PassedEnrolledCourse, data = train, method = "knn", trControl = ctrl, preProcess = c("center","scale"), tuneGrid = knn_grid)
+plot(knnFit)
+knnFit
+
+train.X=subset(train, select=c(Term.GPA,Perc.PassedEnrolledCourse))
+train.y=train$Persistence.NextYear
+test.X=subset(test, select=c(Term.GPA,Perc.PassedEnrolledCourse))
+knn.pred=knn(train.X,test.X,train.y,k=35)
+ct = table(test$Persistence.NextYear,knn.pred)
+Accuracy_test = (ct[1]+ct[4])/sum(ct)
+Recall_test = ct[4]/sum((ct[2]+ct[4]))     
+Precision_test = ct[4]/sum((ct[3]+ct[4]))   
+F1_test = 2/(1/Recall_test+1/Precision_test)
+
+
+knn.pred=knn(train.X,train.X,train.y,k=35)
+ct = table(train$Persistence.NextYear,knn.pred)
+Accuracy_train = (ct[1]+ct[4])/sum(ct)
+Recall_train = ct[4]/sum((ct[2]+ct[4]))     
+Precision_train = ct[4]/sum((ct[3]+ct[4]))   
+F1_train = 2/(1/Recall_train+1/Precision_train)
+tab = matrix(c(round(Accuracy_train,4), round(Accuracy_test,4), round(Recall_train,4), round(Recall_test,4), round(Precision_train,4),round(Precision_test,4),
+round(F1_train,4),round(F1_test,4)),ncol=2, byrow=TRUE)
+colnames(tab) = c('Train', 'Test')
+rownames(tab) = c('Accuracy', 'Recall','Precision','F1')
+tab = as.table(tab)
+tab
+```
+Results of train and test accuracy, recall, precision are shown above. Using five fold CV and grid search in train, we find the optimal k=35.
+
+***
+
+
+- Model 3 (LDA)
+
+```{r eval=TRUE}
+library(MASS)
+lda.fit=lda(as.factor(Persistence.NextYear)~Term.GPA+Perc.PassedEnrolledCourse, data=train)
+lda.pred=predict(lda.fit,train)
+lda.class=lda.pred$class
+ct = table(train$Persistence.NextYear,lda.class)
+ct
+Accuracy_train = (ct[1]+ct[4])/sum(ct)
+Recall_train = ct[4]/sum((ct[2]+ct[4]))     
+Precision_train = ct[4]/sum((ct[3]+ct[4]))   
+F1_train = 2/(1/Recall_train+1/Precision_train)
+par(pty = "s")
+train_roc = roc(train$Persistence.NextYear,lda.pred$posterior[,2],plot=TRUE, legacy.axes = TRUE,
+                print.auc = TRUE, xlab="False Positive Percentage", ylab="True Positive Percentage")
+AUC_train = as.numeric(train_roc$auc)
+
+lda.pred=predict(lda.fit,test)
+lda.class=lda.pred$class
+ct = table(test$Persistence.NextYear,lda.class)
+ct
+Accuracy_test = (ct[1]+ct[4])/sum(ct)
+Recall_test = ct[4]/sum((ct[2]+ct[4]))     
+Precision_test = ct[4]/sum((ct[3]+ct[4]))   
+F1_test = 2/(1/Recall_test+1/Precision_test)
+par(pty = "s")
+test_roc = roc(test$Persistence.NextYear,lda.pred$posterior[,2],plot=TRUE, legacy.axes = TRUE, 
+               print.auc = TRUE, xlab="False Positive Percentage", ylab="True Positive Percentage")
+AUC_test = as.numeric(test_roc$auc)
+
+tab = matrix(c(round(Accuracy_train,4), round(Accuracy_test,4), round(Recall_train,4), round(Recall_test,4), round(Precision_train,4),round(Precision_test,4),
+round(F1_train,4),round(F1_test,4),round(AUC_train,4),round(AUC_test,4)),ncol=2, byrow=TRUE)
+colnames(tab) = c('Train', 'Test')
+rownames(tab) = c('Accuracy', 'Recall','Precision','F1','AUC')
+tab = as.table(tab)
+tab
+```
+Results of train and test accuracy, recall, precision, F1, ROC curve, and AUC are shown above.
+
+***
+
+- Model 4 (QDA)
+
+```{r eval=TRUE}
+library(MASS)
+qda.fit=qda(as.factor(Persistence.NextYear)~Term.GPA+Perc.PassedEnrolledCourse, data=train)
+qda.pred=predict(lda.fit,train)
+qda.class=qda.pred$class
+ct = table(train$Persistence.NextYear,qda.class)
+ct
+Accuracy_train = (ct[1]+ct[4])/sum(ct)
+Recall_train = ct[4]/sum((ct[2]+ct[4]))     
+Precision_train = ct[4]/sum((ct[3]+ct[4]))   
+F1_train = 2/(1/Recall_train+1/Precision_train)
+
+qda.pred=predict(qda.fit,test)
+qda.class=qda.pred$class
+ct = table(test$Persistence.NextYear,qda.class)
+ct
+Accuracy_test = (ct[1]+ct[4])/sum(ct)
+Recall_test = ct[4]/sum((ct[2]+ct[4]))     
+Precision_test = ct[4]/sum((ct[3]+ct[4]))   
+F1_test = 2/(1/Recall_test+1/Precision_test)
+
+tab = matrix(c(round(Accuracy_train,4), round(Accuracy_test,4), round(Recall_train,4), round(Recall_test,4), round(Precision_train,4),round(Precision_test,4),
+round(F1_train,4),round(F1_test,4)),ncol=2, byrow=TRUE)
+colnames(tab) = c('Train', 'Test')
+rownames(tab) = c('Accuracy', 'Recall','Precision','F1')
+tab = as.table(tab)
+tab
+```
+Results of train and test accuracy, recall, precision, and F1 are shown above.
+
+***
+\newpage
+Section 4. 
+
+Summary:
+
+1. Regression models (variable Persistence.NextYear is excluded) 
+
+  1.1: Simple Linear regression: Use the Forward Stepwise Selection to find the optimal single                    predictor. It turns out the single predictor is HSGPA. Test MSEE is 0.9856.
+  
+  1.2: Multiple Linear regression: Use the Forward Stepwise Selection to find the optimal combination of          predictors (the highest adjusted r2. It turns out the best combination of predictors are                   Race_Ethc_Visa.Afram, Gender.Female, HSGPA, SAT_Total, N.As, FullTimeStudent, N.PassedCourse. 
+       Test MSE is 0.9907.
+  
+  1.3: MLR Ridge: Use five-fold CV in training data to find the best lambda is 0.200425126. Test_MSE is           0.9888.
+  
+  1.4: MLR Lasso: Use five-fold CV in training data to find the best lambda is 0.0001381452. Test_MSE is          0.9906.
+
+2. Classification models: 
+
+  The best combination of variables we found is Term.GPA and Perc.PassedEnrolledCourse.
+  
+  2.1: Logistic regression: Test precision is 0.9741.
+  
+  2.2: KNN:  According to the plot that shows the result of knn from k=1 to k=40 using five-fold CV, as we        increasing the value k, the accuracy keeps increase and seems to converage around k=35. Test               precision is 0.9743.
+  
+  2.3: LDA: Test precision is 0.9741.
+  
+  2.4: QDA: Test precision is 0.9746.
+
+***
+- BONUS.
+
+
+***
+
+\newpage
+
+
+***
+
+I hereby write and submit my solutions without violating the academic honesty and integrity. If not, I accept the consequences. Yangxin Fan 
+
+### Write your pair you worked at the top of the page. If no pair, it is ok. List other fiends you worked with (name, last name): Ziyu Xiong
+
+### Disclose the resources or persons if you get any help: ISLR and previous homeworks
+
+### How long did the assignment solutions take?: ...
+
+
+***
+## References
+...
